@@ -155,20 +155,20 @@ export default function AuditLeadForm({ locale, onClose, onSuccess, onError }: A
           {step === 1 && (
             <div className="audit-step">
               <div className="audit-field">
-                <label>{dict.name}</label>
-                <input type="text" name="name" value={formData.name} onChange={handleInputChange} className="audit-input" />
+                <label htmlFor="name">{dict.name}</label>
+                <input id="name" type="text" name="name" value={formData.name} onChange={handleInputChange} className="audit-input" />
               </div>
               <div className="audit-field">
-                <label>{dict.email}</label>
-                <input type="email" name="email" value={formData.email} onChange={handleInputChange} className="audit-input" />
+                <label htmlFor="email">{dict.email}</label>
+                <input id="email" type="email" name="email" value={formData.email} onChange={handleInputChange} className="audit-input" />
               </div>
               <div className="audit-field">
-                <label>{dict.company}</label>
-                <input type="text" name="company" value={formData.company} onChange={handleInputChange} className="audit-input" />
+                <label htmlFor="company">{dict.company}</label>
+                <input id="company" type="text" name="company" value={formData.company} onChange={handleInputChange} className="audit-input" />
               </div>
               <div className="audit-field">
-                <label>{dict.role}</label>
-                <input type="text" name="role" value={formData.role} onChange={handleInputChange} className="audit-input" />
+                <label htmlFor="role">{dict.role}</label>
+                <input id="role" type="text" name="role" value={formData.role} onChange={handleInputChange} className="audit-input" />
               </div>
               <button type="button" onClick={handleNext} className="brutalist-button audit-button">
                 {dict.next}
@@ -179,22 +179,22 @@ export default function AuditLeadForm({ locale, onClose, onSuccess, onError }: A
           {step === 2 && (
             <div className="audit-step">
               <div className="audit-field">
-                <label className="audit-question">{dict.q1}</label>
-                <select name="q1" value={formData.q1} onChange={handleInputChange} className="audit-input" required>
+                <label htmlFor="q1" className="audit-question">{dict.q1}</label>
+                <select id="q1" name="q1" value={formData.q1} onChange={handleInputChange} className="audit-input" required>
                   <option value="" disabled>-</option>
                   {dict.q1opts.map(opt => <option key={opt} value={opt}>{opt}</option>)}
                 </select>
               </div>
               <div className="audit-field">
-                <label className="audit-question">{dict.q2}</label>
-                <select name="q2" value={formData.q2} onChange={handleInputChange} className="audit-input" required>
+                <label htmlFor="q2" className="audit-question">{dict.q2}</label>
+                <select id="q2" name="q2" value={formData.q2} onChange={handleInputChange} className="audit-input" required>
                   <option value="" disabled>-</option>
                   {dict.q2opts.map(opt => <option key={opt} value={opt}>{opt}</option>)}
                 </select>
               </div>
               <div className="audit-field">
-                <label className="audit-question">{dict.q3}</label>
-                <select name="q3" value={formData.q3} onChange={handleInputChange} className="audit-input" required>
+                <label htmlFor="q3" className="audit-question">{dict.q3}</label>
+                <select id="q3" name="q3" value={formData.q3} onChange={handleInputChange} className="audit-input" required>
                   <option value="" disabled>-</option>
                   {dict.q3opts.map(opt => <option key={opt} value={opt}>{opt}</option>)}
                 </select>
