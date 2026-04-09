@@ -28,6 +28,7 @@ const dictionaries = {
     step2: "2/2",
     emailError: "Please use a corporate email. Generic domains (gmail, yahoo, etc.) are restricted.",
     requiredError: "All fields are required.",
+    invalidEmailError: "Please enter a valid email address.",
     fallbackTitle: "Free Guide Sent",
     fallbackMsg: "We noticed you used a personal email. Customized audits require a corporate email, but we've still sent our 'Executive AI Security Guide' directly to your inbox.",
     close: "Close"
@@ -51,6 +52,7 @@ const dictionaries = {
     step2: "2/2",
     emailError: "Por favor use un correo corporativo. Dominios genéricos (gmail, yahoo, etc.) no están permitidos.",
     requiredError: "Todos los campos son obligatorios.",
+    invalidEmailError: "Por favor ingrese una dirección de correo válida.",
     fallbackTitle: "Guía Gratuita Enviada",
     fallbackMsg: "Hemos notado que usaste un correo personal. Las auditorías personalizadas requieren un correo corporativo, pero te hemos enviado nuestra 'Guía de Seguridad de IA para Ejecutivos' a tu bandeja de entrada.",
     close: "Cerrar"
@@ -79,7 +81,14 @@ export default function AuditLeadForm({ locale, onClose, onSuccess, onError }: A
       setError(dict.requiredError);
       return false;
     }
-    
+
+    // Validate email format before allowing any downstream logic
+    const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!EMAIL_REGEX.test(formData.email)) {
+      setError(dict.invalidEmailError);
+      return false;
+    }
+
     setError('');
     return true;
   };
