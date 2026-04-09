@@ -1,36 +1,86 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# EdgeAI Web
 
-## Getting Started
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Famaynez%2FEdgeAI_web)
 
-First, run the development server:
+EdgeAI Web is a high-performance, single-page B2B AI consulting landing page with a brutalist, minimalist, dark-mode aesthetic. 
+
+It provides an integrated pipeline for capturing leads, qualifying them using Google's Gemini AI, and reviewing them in a secure dashboard.
+
+## 🚀 Features
+
+- **Brutalist UI**: Minimalist, dark-mode aesthetic built with vanilla CSS without Tailwind CSS dependency.
+- **Internationalization (i18n)**: Native bilingual support (EN/ES) using JSON localization files and a dynamic content switcher.
+- **AI Lead Qualification**: Integrates with the `@google/generative-ai` SDK to analyze and qualify leads on-the-fly, generating scores and drafting potential email responses.
+- **Secure Leads Dashboard**: A protected `/leads` route using `next-auth` (Google OAuth) for reviewing captured leads, their urgency based on capture timestamps, and AI-generated scores.
+- **Local Data Storage**: Leads are captured and stored in a local JSON file (`data/leads.json`) for simplicity, with Nodemailer fallback available.
+- **Interactive Form Feedback**: Success and error tracking for an optimal form submission user experience.
+
+## ⚙️ Tech Stack
+
+- **Framework**: [Next.js](https://nextjs.org) (App Router)
+- **Styling**: Vanilla CSS (`index.css`)
+- **Authentication**: `next-auth` (Google Provider)
+- **AI Integration**: Google Gemini (`@google/generative-ai`)
+- **Email Delivery (Optional)**: `nodemailer`
+
+## 🛠️ Getting Started
+
+### 1. Clone the repository
+
+```bash
+git clone https://github.com/amaynez/EdgeAI_web.git
+cd EdgeAI_web
+```
+
+### 2. Install Dependencies
+
+```bash
+npm install
+```
+
+### 3. Setup Environment Variables
+
+Create a `.env.local` file in the root of your project and populate it with the following required environment variables:
+
+```env
+# Email Configuration (Nodemailer setup)
+GMAIL_USER="your_email@gmail.com"
+GMAIL_APP_PASSWORD="your_app_password"
+
+# Google Gemini API
+GEMINI_API_KEY="your_gemini_api_key"
+
+# Google OAuth (NextAuth) for the /leads dashboard
+GOOGLE_CLIENT_ID="your_google_client_id"
+GOOGLE_CLIENT_SECRET="your_google_client_secret"
+
+# NextAuth Configuration
+NEXTAUTH_SECRET="a_strong_random_secret"
+NEXTAUTH_URL="http://localhost:3000" # Change to production URL when deploying
+```
+
+### 4. Run the Development Server
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## 🌐 Deployment & Vercel Configuration
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+The easiest way to deploy this Next.js app is to use the [Vercel Platform](https://vercel.com).
 
-## Learn More
+1. Push your code to your GitHub repository.
+2. Import the project into Vercel.
+3. Add all the Environment Variables from your `.env.local` to your Vercel project's settings.
+   > **Note**: Be sure to update the `NEXTAUTH_URL` in Vercel to your production domain (e.g., `https://your-vercel-domain.vercel.app`).
+4. **Google OAuth Production Setup**:
+   - Go to Google Cloud Console > APIs & Services > Credentials.
+   - Update your **Authorized JavaScript Origins** to include your Vercel URL.
+   - Update your **Authorized Redirect URIs** to include `https://your-vercel-domain.vercel.app/api/auth/callback/google`.
+5. Deploy!
 
-To learn more about Next.js, take a look at the following resources:
+## 📜 License
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+MIT

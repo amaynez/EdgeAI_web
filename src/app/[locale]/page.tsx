@@ -15,7 +15,7 @@ export default async function Home({
     <div className="home-container">
       <Hero dictionary={dictionary} />
       <ProblemSolution dictionary={dictionary} />
-      <DynamicCTA ctaText={dictionary.cta} />
+      <DynamicCTA ctaText={dictionary.cta} locale={locale} />
     </div>
   );
 }
