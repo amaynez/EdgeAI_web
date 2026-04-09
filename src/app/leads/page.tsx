@@ -10,8 +10,9 @@ export const revalidate = 0;
 
 export default async function LeadsPage() {
   const session = await getServerSession(authOptions);
-  
-  if (!session || session.user?.email !== 'armando.maynez@gmail.com') {
+  const userEmail = session?.user?.email;
+
+  if (!session || userEmail !== 'armando.maynez@gmail.com') {
     redirect('/api/auth/signin?callbackUrl=/leads');
   }
 
@@ -34,7 +35,7 @@ export default async function LeadsPage() {
         <div>
           <h1 className="brutalist-h1" style={{ fontSize: '2.5rem', marginBottom: '0.5rem', WebkitTextFillColor: 'var(--text-primary)' }}>Lead HQ</h1>
           <div style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
-            Authenticated as: <strong style={{ color: 'var(--text-primary)' }}>{session.user.email}</strong>
+            Authenticated as: <strong style={{ color: 'var(--text-primary)' }}>{userEmail}</strong>
           </div>
         </div>
       </div>
