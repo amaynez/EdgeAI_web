@@ -1,8 +1,7 @@
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "../api/auth/[...nextauth]/route";
 import { redirect } from "next/navigation";
-import fs from 'fs';
-import path from 'path';
+import { pool, ensureLeadsTable } from '@/lib/db';
 import LeadsTable from './LeadsTable';
 import './leads.css';
 
@@ -16,23 +15,17 @@ export default async function LeadsPage() {
     redirect('/api/auth/signin?callbackUrl=/leads');
   }
 
-  const leadsFilePath = path.join(process.cwd(), 'data', 'leads.json');
-  let leads = [];
+  await ensureLeadsTable();
+  let leads: any[] = [];
 
   try {
-    if (fs.existsSync(leadsFilePath)) {
-      const fileContent = fs.readFileSync(leadsFilePath, 'utf8');
-      leads = JSON.parse(fileContent);
-      
-      // Sort by urgency from most urgent to least urgent
-      leads.sort((a: any, b: any) => {
-        const scoreA = a.qualification?.urgencyScore || 0;
-        const scoreB = b.qualification?.urgencyScore || 0;
-        return scoreB - scoreA; // descending
-      });
-    }
+    const { rows } = await pool.query(
+      `SELECT * FROM leads
+       ORDER BY COALESCE((qualification->>'urgencyScore')::int, 0) DESC`
+    );
+    leads = rows;
   } catch (error) {
-    console.error("Error reading leads file", error);
+    console.error('Error reading leads from DB:', error);
   }
 
   return (

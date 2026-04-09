@@ -1,20 +1,142 @@
 import { NextResponse } from 'next/server';
 import nodemailer from 'nodemailer';
-import fs from 'fs/promises';
-import path from 'path';
 import { GoogleGenerativeAI } from '@google/generative-ai';
+import { pool, ensureLeadsTable } from '@/lib/db';
 
 // Initialize Gemini
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
 
+// ---------------------------------------------------------------------------
+// In-memory rate limiter (10 requests per IP per 15-minute window).
+// NOTE: In a multi-instance/serverless environment each cold-start gets its
+// own Map. For stricter limits use a shared store such as Upstash Redis.
+// ---------------------------------------------------------------------------
+const RATE_LIMIT_MAX = 10;
+const RATE_LIMIT_WINDOW_MS = 15 * 60 * 1000; // 15 minutes
+
+interface RateEntry { count: number; windowStart: number }
+const rateLimitStore = new Map<string, RateEntry>();
+
+function getClientIp(request: Request): string {
+  // Vercel / common reverse-proxy headers
+  const forwarded = request.headers.get('x-forwarded-for');
+  if (forwarded) return forwarded.split(',')[0].trim();
+  return request.headers.get('x-real-ip') ?? 'unknown';
+}
+
+function isRateLimited(ip: string): boolean {
+  const now = Date.now();
+  const entry = rateLimitStore.get(ip);
+
+  if (!entry || now - entry.windowStart > RATE_LIMIT_WINDOW_MS) {
+    rateLimitStore.set(ip, { count: 1, windowStart: now });
+    return false;
+  }
+
+  if (entry.count >= RATE_LIMIT_MAX) return true;
+  entry.count += 1;
+  return false;
+}
+
+// ---------------------------------------------------------------------------
+// Validation helpers
+// ---------------------------------------------------------------------------
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+// Allowed enum values for the three qualification questions.
+// Keep these in sync with the values emitted by the front-end form.
+const Q1_VALUES = ['none', 'chatgpt', 'copilot', 'gemini', 'other', 'multiple'] as const;
+const Q2_VALUES = ['yes', 'no', 'unsure'] as const;
+const Q3_VALUES = ['yes', 'no', 'unsure'] as const;
+
+type Q1Value = typeof Q1_VALUES[number];
+type Q2Value = typeof Q2_VALUES[number];
+type Q3Value = typeof Q3_VALUES[number];
+
+function validateLeadPayload(data: Record<string, unknown>): string[] {
+  const errors: string[] = [];
+
+  // --- Required string fields ---
+  const stringFields: Array<{ key: string; maxLen: number }> = [
+    { key: 'name',    maxLen: 100 },
+    { key: 'email',   maxLen: 254 },
+    { key: 'company', maxLen: 150 },
+    { key: 'role',    maxLen: 100 },
+  ];
+
+  for (const { key, maxLen } of stringFields) {
+    const val = data[key];
+    if (!val || typeof val !== 'string' || val.trim() === '') {
+      errors.push(`"${key}" is required.`);
+    } else if (val.length > maxLen) {
+      errors.push(`"${key}" must be at most ${maxLen} characters.`);
+    }
+  }
+
+  // --- Email format ---
+  if (typeof data.email === 'string' && data.email.trim() !== '') {
+    if (!EMAIL_REGEX.test(data.email)) {
+      errors.push('"email" must be a valid email address.');
+    }
+  }
+
+  // --- Optional qualification questions (enum + max-length) ---
+  const enumChecks: Array<{ key: string; allowed: readonly string[]; maxLen: number }> = [
+    { key: 'q1', allowed: Q1_VALUES, maxLen: 500 },
+    { key: 'q2', allowed: Q2_VALUES, maxLen: 500 },
+    { key: 'q3', allowed: Q3_VALUES, maxLen: 500 },
+  ];
+
+  for (const { key, allowed, maxLen } of enumChecks) {
+    const val = data[key];
+    if (val === undefined || val === null || val === '') continue; // optional
+    if (typeof val !== 'string') {
+      errors.push(`"${key}" must be a string.`);
+      continue;
+    }
+    if (val.length > maxLen) {
+      errors.push(`"${key}" must be at most ${maxLen} characters.`);
+    }
+    if (!allowed.includes(val as string)) {
+      errors.push(`"${key}" must be one of: ${allowed.join(', ')}.`);
+    }
+  }
+
+  return errors;
+}
+
 export async function POST(request: Request) {
   try {
-    const data = await request.json();
-    const { name, email, company, role, q1, q2, q3 } = data;
-
-    if (!name || !email || !company || !role) {
-      return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
+    // --- Rate limiting ---
+    const clientIp = getClientIp(request);
+    if (isRateLimited(clientIp)) {
+      return NextResponse.json(
+        { error: 'Too many requests. Please try again later.' },
+        { status: 429 }
+      );
     }
+
+    // --- Parse & validate payload ---
+    let data: Record<string, unknown>;
+    try {
+      data = await request.json();
+    } catch {
+      return NextResponse.json({ error: 'Invalid JSON body.' }, { status: 400 });
+    }
+
+    const validationErrors = validateLeadPayload(data);
+    if (validationErrors.length > 0) {
+      return NextResponse.json(
+        { error: 'Validation failed.', details: validationErrors },
+        { status: 400 }
+      );
+    }
+
+    // Safe to destructure after validation
+    const { name, email, company, role, q1, q2, q3 } = data as {
+      name: string; email: string; company: string; role: string;
+      q1?: Q1Value; q2?: Q2Value; q3?: Q3Value;
+    };
 
     // --- 1. AI Qualification using Gemini ---
     let aiInsights = {
@@ -64,32 +186,23 @@ Assessment Answers:
       console.error('Error during Gemini API call:', aiError);
     }
   
-    // --- 2. Save to Local JSON File (Backup) ---
-    const dataDir = path.join(process.cwd(), 'data');
-    const leadsFile = path.join(dataDir, 'leads.json');
-
-    try {
-      await fs.access(dataDir);
-    } catch {
-      await fs.mkdir(dataDir, { recursive: true });
-    }
-
-    let leads: any[] = [];
-    try {
-      const fileData = await fs.readFile(leadsFile, 'utf-8');
-      leads = JSON.parse(fileData);
-    } catch {
-      // Ignore if file doesn't exist
-    }
-
-    leads.push({
-      id: Date.now().toString(),
-      timestamp: new Date().toISOString(),
-      ...data,
-      qualification: aiInsights
-    });
-
-    await fs.writeFile(leadsFile, JSON.stringify(leads, null, 2), 'utf-8');
+    // --- 2. Persist to Neon Postgres (atomic single INSERT — no race condition) ---
+    await ensureLeadsTable();
+    await pool.query(
+      `INSERT INTO leads (id, name, email, company, role, q1, q2, q3, qualification)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
+      [
+        Date.now().toString(),
+        name,
+        email,
+        company,
+        role,
+        q1 ?? null,
+        q2 ?? null,
+        q3 ?? null,
+        JSON.stringify(aiInsights),
+      ]
+    );
 
     // --- 3. Send via Email (Gmail SMTP) ---
     const user = process.env.GMAIL_USER;
