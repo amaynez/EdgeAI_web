@@ -1,3 +1,4 @@
+import Image from 'next/image';
 import LanguageSelector from './LanguageSelector';
 
 export default function Navigation({
@@ -11,7 +12,7 @@ export default function Navigation({
     <nav className="main-nav">
       <div className="nav-container">
         <div className="logo">
-          <img src="/favicon_io/android-chrome-192x192.png" alt={siteTitle} height={32} style={{ display: 'block' }} />
+          <Image src="/favicon_io/android-chrome-192x192.png" alt={siteTitle} width={32} height={32} />
         </div>
         <LanguageSelector currentLocale={currentLocale} />
       </div>
