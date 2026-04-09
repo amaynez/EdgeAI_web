@@ -2,6 +2,7 @@ import { getServerSession } from "next-auth/next";
 import { authOptions } from "../api/auth/[...nextauth]/route";
 import { redirect } from "next/navigation";
 import { pool, ensureLeadsTable } from '@/lib/db';
+import { ADMIN_EMAIL } from '@/lib/config';
 import LeadsTable from './LeadsTable';
 import './leads.css';
 
@@ -12,7 +13,7 @@ export default async function LeadsPage() {
   const session = await getServerSession(authOptions);
   const userEmail = session?.user?.email;
 
-  if (!session || userEmail !== 'armando.maynez@gmail.com') {
+  if (!session || userEmail !== ADMIN_EMAIL) {
     redirect('/api/auth/signin?callbackUrl=/leads');
   }
 

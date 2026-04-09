@@ -1,5 +1,6 @@
 import NextAuth, { NextAuthOptions } from "next-auth";
 import GoogleProvider from "next-auth/providers/google";
+import { ADMIN_EMAIL } from "@/lib/config";
 
 export const authOptions: NextAuthOptions = {
   providers: [
@@ -10,7 +11,7 @@ export const authOptions: NextAuthOptions = {
   ],
   callbacks: {
     async signIn({ user }) {
-      if (user.email === "armando.maynez@gmail.com") {
+      if (user.email === ADMIN_EMAIL) {
         return true;
       }
       return false; // Deny access to anyone else
