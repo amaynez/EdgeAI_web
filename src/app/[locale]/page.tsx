@@ -1,3 +1,4 @@
+import Image from 'next/image';
 import { getDictionary } from '@/i18n';
 import Hero from '@/components/Hero';
 import ProblemSolution from '@/components/ProblemSolution';
@@ -18,7 +19,13 @@ export default async function Home({
       <DynamicCTA ctaText={dictionary.cta} locale={locale} />
 
       <footer className="page-footer-logo">
-        <img src="/favicon_io/android-chrome-512x512.png" alt={dictionary.siteTitle} />
+        <Image
+          src="/favicon_io/android-chrome-512x512.png"
+          alt={dictionary.siteTitle}
+          width={48}
+          height={48}
+          loading="lazy"
+        />
         <span className="page-footer-copy">
           © {new Date().getFullYear()} {dictionary.siteTitle}. All rights reserved.
         </span>

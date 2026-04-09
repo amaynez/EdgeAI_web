@@ -1,11 +1,16 @@
+import Image from "next/image";
+
 export default function Hero({ dictionary }: { dictionary: any }) {
   return (
     <section className="hero-section">
       <div className="hero-logo-lockup">
-        <img
+        <Image
           src="/logo-zeroleakai.webp"
           alt={dictionary.siteTitle}
+          width={320}
+          height={320}
           className="hero-logo"
+          priority
         />
       </div>
 
