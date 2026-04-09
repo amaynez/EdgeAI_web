@@ -50,14 +50,14 @@ export default function LeadsTable({ initialLeads }: { initialLeads: any[] }) {
     const newState = !currentState;
     
     // Optimistic UI update
-    setLeads(leads.map(l => l.id === id ? { ...l, contacted: newState } : l));
+    setLeads(prev => prev.map(l => l.id === id ? { ...l, contacted: newState } : l));
     
     // Server execution
     const result = await toggleContacted(id, newState);
     if (!result.success) {
       console.error(result.error);
       // Revert if server failed
-      setLeads(leads.map(l => l.id === id ? { ...l, contacted: currentState } : l));
+      setLeads(prev => prev.map(l => l.id === id ? { ...l, contacted: currentState } : l));
     }
   };
 
