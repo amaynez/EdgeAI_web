@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import nodemailer from 'nodemailer';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { pool, ensureLeadsTable } from '@/lib/db';
+import { sanitizeHtml } from '@/lib/sanitize';
 
 // Initialize Gemini
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
@@ -175,7 +176,14 @@ Assessment Answers:
         const responseText = result.response.text().replace(/```json/gi, '').replace(/```/g, '').trim();
         
         try {
-          aiInsights = JSON.parse(responseText);
+          const parsed = JSON.parse(responseText);
+          // Sanitize the AI-generated HTML email draft before persisting.
+          // Plain-text fields (analysis, scores) are stored as text and are
+          // safe; only draftEmail is HTML and needs allow-list sanitization.
+          aiInsights = {
+            ...parsed,
+            draftEmail: sanitizeHtml(parsed.draftEmail ?? ''),
+          };
         } catch (e) {
           console.error('Failed to parse Gemini output as JSON:', responseText);
         }
