@@ -25,13 +25,13 @@ export default function DynamicCTA({ ctaText, locale }: { ctaText: string, local
       </button>
 
       {successMessage && (
-        <div style={{ color: '#16a34a', marginTop: '1rem', fontWeight: 'bold' }}>
+        <div className="cta-message cta-success">
           {successMessage}
         </div>
       )}
       
       {errorMessage && (
-        <div style={{ color: '#dc2626', marginTop: '1rem', fontWeight: 'bold' }}>
+        <div className="cta-message cta-error">
           {errorMessage}
         </div>
       )}

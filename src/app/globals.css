@@ -541,3 +541,17 @@ body {
   font-size: 0.9rem;
   font-weight: 600;
 }
+
+/* DynamicCTA message states */
+.cta-message {
+  margin-top: 1rem;
+  font-weight: bold;
+}
+
+.cta-success {
+  color: #16a34a;
+}
+
+.cta-error {
+  color: #dc2626;
+}
