@@ -16,6 +16,13 @@ export default async function Home({
       <Hero dictionary={dictionary} />
       <ProblemSolution dictionary={dictionary} />
       <DynamicCTA ctaText={dictionary.cta} locale={locale} />
+
+      <footer className="page-footer-logo">
+        <img src="/favicon_io/android-chrome-512x512.png" alt={dictionary.siteTitle} />
+        <span className="page-footer-copy">
+          © {new Date().getFullYear()} {dictionary.siteTitle}. All rights reserved.
+        </span>
+      </footer>
     </div>
   );
 }

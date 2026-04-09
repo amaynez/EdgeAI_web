@@ -17,6 +17,11 @@ export const authOptions: NextAuthOptions = {
     },
   },
   secret: process.env.NEXTAUTH_SECRET,
+  theme: {
+    colorScheme: "light",
+    logo: "/logo-zeroleakai.webp",
+    brandColor: "#0066cc",
+  },
 };
 
 const handler = NextAuth(authOptions);

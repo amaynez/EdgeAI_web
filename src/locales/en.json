@@ -1,8 +1,11 @@
 {
-  "siteTitle": "AIR-GAPPED AI",
+  "siteTitle": "Zero Leak AI",
   "hero": {
     "h1": "INTELLIGENCE IS ALREADY INSIDE YOUR COMPANY.\nTHE ONLY QUESTION IS WHETHER YOU STILL CONTROL IT.",
-    "subH1": "Real automation, inside your network.\nZero data leakage.\nLFPDPPP compliance by design—not by policy."
+    "subH1": "Real automation, inside your network.\nZero data leakage.\nLFPDPPP compliance by design—not by policy.",
+    "stat1": "On-Premises",
+    "stat2": "Data Leaks",
+    "stat3": "Compliant by Design"
   },
   "cta": "Get Started",
   "problem": {

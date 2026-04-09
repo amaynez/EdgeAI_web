@@ -1,8 +1,11 @@
 {
-  "siteTitle": "IA SIN CONEXIÓN",
+  "siteTitle": "IA Cero Fuga",
   "hero": {
     "h1": "LA INTELIGENCIA YA ESTÁ DENTRO DE TU EMPRESA.\nLA PREGUNTA ES SI SIGUE BAJO TU CONTROL.",
-    "subH1": "Automatización real, dentro de tu red.\nCero fuga de datos.\nCumplimiento LFPDPPP, por arquitectura—no por promesas."
+    "subH1": "Automatización real, dentro de tu red.\nCero fuga de datos.\nCumplimiento LFPDPPP, por arquitectura—no por promesas.",
+    "stat1": "En Premisas",
+    "stat2": "Fuga de Datos",
+    "stat3": "Cumplimiento por Diseño"
   },
   "cta": "Comencemos",
   "problem": {
