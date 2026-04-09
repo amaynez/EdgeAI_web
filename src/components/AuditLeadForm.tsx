@@ -29,8 +29,8 @@ const dictionaries = {
     emailError: "Please use a corporate email. Generic domains (gmail, yahoo, etc.) are restricted.",
     requiredError: "All fields are required.",
     invalidEmailError: "Please enter a valid email address.",
-    fallbackTitle: "Free Guide Sent",
-    fallbackMsg: "We noticed you used a personal email. Customized audits require a corporate email, but we've still sent our 'Executive AI Security Guide' directly to your inbox.",
+    fallbackTitle: "Corporate Email Required",
+    fallbackMsg: "Customized AI security audits are reserved for verified corporate identities. Please re-enter your request using a company email address to proceed.",
     close: "Close"
   },
   es: {
@@ -53,8 +53,8 @@ const dictionaries = {
     emailError: "Por favor use un correo corporativo. Dominios genéricos (gmail, yahoo, etc.) no están permitidos.",
     requiredError: "Todos los campos son obligatorios.",
     invalidEmailError: "Por favor ingrese una dirección de correo válida.",
-    fallbackTitle: "Guía Gratuita Enviada",
-    fallbackMsg: "Hemos notado que usaste un correo personal. Las auditorías personalizadas requieren un correo corporativo, pero te hemos enviado nuestra 'Guía de Seguridad de IA para Ejecutivos' a tu bandeja de entrada.",
+    fallbackTitle: "Correo Corporativo Requerido",
+    fallbackMsg: "Las auditorías de seguridad de IA personalizadas están reservadas para identidades corporativas verificadas. Por favor, vuelve a ingresar tu solicitud usando una dirección de correo de tu empresa para continuar.",
     close: "Cerrar"
   }
 };
@@ -97,7 +97,7 @@ export default function AuditLeadForm({ locale, onClose, onSuccess, onError }: A
     if (validateStep1()) {
       const emailDomain = formData.email.split('@')[1]?.toLowerCase();
       if (emailDomain && GENERIC_DOMAINS.includes(emailDomain)) {
-        setStep(3);
+        setError(dict.emailError);
       } else {
         setStep(2);
       }
