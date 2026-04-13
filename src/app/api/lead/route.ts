@@ -1,20 +1,174 @@
 import { NextResponse } from 'next/server';
 import nodemailer from 'nodemailer';
-import fs from 'fs/promises';
-import path from 'path';
 import { GoogleGenerativeAI } from '@google/generative-ai';
+import { pool, ensureLeadsTable } from '@/lib/db';
+import { sanitizeHtml } from '@/lib/sanitize';
 
 // Initialize Gemini
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
 
+// ---------------------------------------------------------------------------
+// Cached DB table initializer — avoids a CREATE TABLE round-trip on every
+// request. Set to false on cold-start; flipped to true after first success.
+// ---------------------------------------------------------------------------
+let tableInitialized = false;
+async function ensureTableOnce(): Promise<void> {
+  if (tableInitialized) return;
+  await ensureLeadsTable();
+  tableInitialized = true;
+}
+
+// ---------------------------------------------------------------------------
+// In-memory rate limiter (10 requests per IP per 15-minute window).
+// NOTE: In a multi-instance/serverless environment each cold-start gets its
+// own Map. For stricter limits use a shared store such as Upstash Redis.
+// ---------------------------------------------------------------------------
+const RATE_LIMIT_MAX = 10;
+const RATE_LIMIT_WINDOW_MS = 15 * 60 * 1000; // 15 minutes
+
+interface RateEntry { count: number; windowStart: number }
+const rateLimitStore = new Map<string, RateEntry>();
+
+function getClientIp(request: Request): string {
+  // Vercel / common reverse-proxy headers
+  const forwarded = request.headers.get('x-forwarded-for');
+  if (forwarded) return forwarded.split(',')[0].trim();
+  return request.headers.get('x-real-ip') ?? 'unknown';
+}
+
+function isRateLimited(ip: string): boolean {
+  const now = Date.now();
+
+  // Prune stale entries to prevent unbounded Map growth.
+  for (const [key, rec] of rateLimitStore) {
+    if (now - rec.windowStart > RATE_LIMIT_WINDOW_MS) {
+      rateLimitStore.delete(key);
+    }
+  }
+
+  const entry = rateLimitStore.get(ip);
+
+  if (!entry || now - entry.windowStart > RATE_LIMIT_WINDOW_MS) {
+    rateLimitStore.set(ip, { count: 1, windowStart: now });
+    return false;
+  }
+
+  if (entry.count >= RATE_LIMIT_MAX) return true;
+  entry.count += 1;
+  return false;
+}
+
+// ---------------------------------------------------------------------------
+// Validation helpers
+// ---------------------------------------------------------------------------
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+// Allowed enum values for the three qualification questions.
+// Keep these in sync with the values emitted by the front-end form.
+const Q1_VALUES = ['none', 'chatgpt', 'copilot', 'gemini', 'other', 'multiple'] as const;
+const Q2_VALUES = ['yes', 'no', 'unsure'] as const;
+const Q3_VALUES = ['yes', 'no', 'unsure'] as const;
+
+type Q1Value = typeof Q1_VALUES[number];
+type Q2Value = typeof Q2_VALUES[number];
+type Q3Value = typeof Q3_VALUES[number];
+
+// ---------------------------------------------------------------------------
+// HTML-escape helper — prevents XSS when interpolating user data into email HTML.
+// ---------------------------------------------------------------------------
+function escapeHtml(value: string | undefined | null): string {
+  return String(value ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#x27;');
+}
+
+function validateLeadPayload(data: Record<string, unknown>): string[] {
+  const errors: string[] = [];
+
+  // --- Required string fields ---
+  const stringFields: Array<{ key: string; maxLen: number }> = [
+    { key: 'name',    maxLen: 100 },
+    { key: 'email',   maxLen: 254 },
+    { key: 'company', maxLen: 150 },
+    { key: 'role',    maxLen: 100 },
+  ];
+
+  for (const { key, maxLen } of stringFields) {
+    const val = data[key];
+    if (!val || typeof val !== 'string' || val.trim() === '') {
+      errors.push(`"${key}" is required.`);
+    } else if (val.length > maxLen) {
+      errors.push(`"${key}" must be at most ${maxLen} characters.`);
+    }
+  }
+
+  // --- Email format ---
+  if (typeof data.email === 'string' && data.email.trim() !== '') {
+    if (!EMAIL_REGEX.test(data.email)) {
+      errors.push('"email" must be a valid email address.');
+    }
+  }
+
+  // --- Optional qualification questions (enum + max-length) ---
+  const enumChecks: Array<{ key: string; allowed: readonly string[]; maxLen: number }> = [
+    { key: 'q1', allowed: Q1_VALUES, maxLen: 500 },
+    { key: 'q2', allowed: Q2_VALUES, maxLen: 500 },
+    { key: 'q3', allowed: Q3_VALUES, maxLen: 500 },
+  ];
+
+  for (const { key, allowed, maxLen } of enumChecks) {
+    const val = data[key];
+    if (val === undefined || val === null || val === '') continue; // optional
+    if (typeof val !== 'string') {
+      errors.push(`"${key}" must be a string.`);
+      continue;
+    }
+    if (val.length > maxLen) {
+      errors.push(`"${key}" must be at most ${maxLen} characters.`);
+    }
+    if (!allowed.includes(val as string)) {
+      errors.push(`"${key}" must be one of: ${allowed.join(', ')}.`);
+    }
+  }
+
+  return errors;
+}
+
 export async function POST(request: Request) {
   try {
-    const data = await request.json();
-    const { name, email, company, role, q1, q2, q3 } = data;
-
-    if (!name || !email || !company || !role) {
-      return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
+    // --- Rate limiting ---
+    const clientIp = getClientIp(request);
+    if (isRateLimited(clientIp)) {
+      return NextResponse.json(
+        { error: 'Too many requests. Please try again later.' },
+        { status: 429 }
+      );
     }
+
+    // --- Parse & validate payload ---
+    let data: Record<string, unknown>;
+    try {
+      data = await request.json();
+    } catch {
+      return NextResponse.json({ error: 'Invalid JSON body.' }, { status: 400 });
+    }
+
+    const validationErrors = validateLeadPayload(data);
+    if (validationErrors.length > 0) {
+      return NextResponse.json(
+        { error: 'Validation failed.', details: validationErrors },
+        { status: 400 }
+      );
+    }
+
+    // Safe to destructure after validation
+    const { name, email, company, role, q1, q2, q3 } = data as {
+      name: string; email: string; company: string; role: string;
+      q1?: Q1Value; q2?: Q2Value; q3?: Q3Value;
+    };
 
     // --- 1. AI Qualification using Gemini ---
     let aiInsights = {
@@ -53,7 +207,17 @@ Assessment Answers:
         const responseText = result.response.text().replace(/```json/gi, '').replace(/```/g, '').trim();
         
         try {
-          aiInsights = JSON.parse(responseText);
+          const parsed = JSON.parse(responseText);
+          // Explicitly extract only the expected fields so that unexpected
+          // properties in the AI response cannot pollute aiInsights (no spread).
+          // Coerce numeric scores to numbers with safe defaults.
+          aiInsights = {
+            urgencyScore:  Number.isFinite(Number(parsed.urgencyScore))  ? Number(parsed.urgencyScore)  : 0,
+            potentialScore: Number.isFinite(Number(parsed.potentialScore)) ? Number(parsed.potentialScore) : 0,
+            analysis:  typeof parsed.analysis === 'string'  ? parsed.analysis  : 'AI Analysis Failed or Unavailable.',
+            // Sanitize the AI-generated HTML email draft before persisting.
+            draftEmail: sanitizeHtml(parsed.draftEmail ?? ''),
+          };
         } catch (e) {
           console.error('Failed to parse Gemini output as JSON:', responseText);
         }
@@ -64,32 +228,23 @@ Assessment Answers:
       console.error('Error during Gemini API call:', aiError);
     }
   
-    // --- 2. Save to Local JSON File (Backup) ---
-    const dataDir = path.join(process.cwd(), 'data');
-    const leadsFile = path.join(dataDir, 'leads.json');
-
-    try {
-      await fs.access(dataDir);
-    } catch {
-      await fs.mkdir(dataDir, { recursive: true });
-    }
-
-    let leads: any[] = [];
-    try {
-      const fileData = await fs.readFile(leadsFile, 'utf-8');
-      leads = JSON.parse(fileData);
-    } catch {
-      // Ignore if file doesn't exist
-    }
-
-    leads.push({
-      id: Date.now().toString(),
-      timestamp: new Date().toISOString(),
-      ...data,
-      qualification: aiInsights
-    });
-
-    await fs.writeFile(leadsFile, JSON.stringify(leads, null, 2), 'utf-8');
+    // --- 2. Persist to Neon Postgres (atomic single INSERT — no race condition) ---
+    await ensureTableOnce();
+    await pool.query(
+      `INSERT INTO leads (id, name, email, company, role, q1, q2, q3, qualification)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
+      [
+        crypto.randomUUID(),
+        name,
+        email,
+        company,
+        role,
+        q1 ?? null,
+        q2 ?? null,
+        q3 ?? null,
+        JSON.stringify(aiInsights),
+      ]
+    );
 
     // --- 3. Send via Email (Gmail SMTP) ---
     const user = process.env.GMAIL_USER;
@@ -108,7 +263,7 @@ Assessment Answers:
         from: user,
         to: user, // Send to yourself
         replyTo: email, // This allows you to just hit "Reply" and send the draft to them.
-        subject: `[Lead: ${aiInsights.potentialScore}/10] AI Audit Request: ${company}`,
+        subject: `[Lead: ${aiInsights.potentialScore}/10] AI Audit Request: ${escapeHtml(company)}`,
         html: `
           <div style="font-family: sans-serif; max-width: 600px; margin: auto; padding: 20px; color: #333; line-height: 1.6;">
             <h2 style="border-bottom: 2px solid #000; padding-bottom: 10px;">New AI Audit Lead Captured</h2>
@@ -121,28 +276,28 @@ Assessment Answers:
               <p><strong>Potential Score:</strong>
                 <span style="background-color: ${aiInsights.potentialScore >= 7 ? '#28a745' : '#e9ecef'}; color: ${aiInsights.potentialScore >= 7 ? '#fff' : '#000'}; padding: 2px 8px; border-radius: 12px; font-weight: bold;">${aiInsights.potentialScore}/10</span>
               </p>
-              <p><strong>Analysis:</strong> ${aiInsights.analysis}</p>
+              <p><strong>Analysis:</strong> ${escapeHtml(aiInsights.analysis)}</p>
             </div>
 
             <h3 style="color: #000; border-bottom: 1px solid #ddd; padding-bottom: 4px;">Executive Contact Identity</h3>
             <ul style="list-style-type: none; padding-left: 0;">
-              <li style="margin-bottom: 8px;"><strong>Name:</strong> ${name}</li>
-              <li style="margin-bottom: 8px;"><strong>Role:</strong> ${role}</li>
-              <li style="margin-bottom: 8px;"><strong>Company:</strong> ${company}</li>
-              <li style="margin-bottom: 8px;"><strong>Email:</strong> <a href="mailto:${email}" style="color: #007bff; text-decoration: none;">${email}</a></li>
+              <li style="margin-bottom: 8px;"><strong>Name:</strong> ${escapeHtml(name)}</li>
+              <li style="margin-bottom: 8px;"><strong>Role:</strong> ${escapeHtml(role)}</li>
+              <li style="margin-bottom: 8px;"><strong>Company:</strong> ${escapeHtml(company)}</li>
+              <li style="margin-bottom: 8px;"><strong>Email:</strong> <a href="mailto:${encodeURIComponent(email)}" style="color: #007bff; text-decoration: none;">${escapeHtml(email)}</a></li>
             </ul>
 
             <h3 style="color: #000; border-bottom: 1px solid #ddd; padding-bottom: 4px; margin-top: 24px;">Vulnerability Assessment Answers</h3>
             <ul style="padding-left: 20px;">
-              <li><strong>Q1: AI tools accessed (last 30 days)?</strong><br> ${q1 || 'Not Answered'}</li>
-              <li style="margin-top: 10px;"><strong>Q2: Operational data containing PII/IP?</strong><br> ${q2 || 'Not Answered'}</li>
-              <li style="margin-top: 10px;"><strong>Q3: Data exposed via cloud AI breach?</strong><br> ${q3 || 'Not Answered'}</li>
+              <li><strong>Q1: AI tools accessed (last 30 days)?</strong><br> ${escapeHtml(q1)}</li>
+              <li style="margin-top: 10px;"><strong>Q2: Operational data containing PII/IP?</strong><br> ${escapeHtml(q2)}</li>
+              <li style="margin-top: 10px;"><strong>Q3: Data exposed via cloud AI breach?</strong><br> ${escapeHtml(q3)}</li>
             </ul>
 
             <h3 style="color: #000; border-bottom: 1px solid #ddd; padding-bottom: 4px; margin-top: 24px;">Drafted Email Response (via Gemini)</h3>
             <div style="background-color: #fff; border: 1px solid #ddd; padding: 15px; border-radius: 8px; font-family: sans-serif; white-space: pre-wrap;">${aiInsights.draftEmail}</div>
             
-            <p style="font-size: 0.9em; color: #666; margin-top: 20px;"><em>You can just click 'Reply' on this email to reply back directly to ${name}! Just copy formatting from the drafted response.</em></p>
+            <p style="font-size: 0.9em; color: #666; margin-top: 20px;"><em>You can just click 'Reply' on this email to reply back directly to ${escapeHtml(name)}! Just copy formatting from the drafted response.</em></p>
           </div>
         `,
       };

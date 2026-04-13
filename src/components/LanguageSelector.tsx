@@ -1,6 +1,8 @@
 'use client';
 
+import React from 'react';
 import { usePathname, useRouter } from 'next/navigation';
+import { SUPPORTED_LOCALES } from '@/lib/locales';
 
 const LOCALE_COOKIE = 'NEXT_LOCALE';
 const COOKIE_MAX_AGE = 60 * 60 * 24 * 365; // 1 year
@@ -22,19 +24,18 @@ export default function LanguageSelector({ currentLocale }: { currentLocale: str
 
   return (
     <div className="language-selector">
-      <button 
-        className={`lang-btn ${currentLocale === 'en' ? 'active' : ''}`} 
-        onClick={() => switchLocale('en')}
-      >
-        EN
-      </button>
-      <span className="lang-divider">|</span>
-      <button 
-        className={`lang-btn ${currentLocale === 'es' ? 'active' : ''}`} 
-        onClick={() => switchLocale('es')}
-      >
-        ES
-      </button>
+      {SUPPORTED_LOCALES.map((locale, index) => (
+        <React.Fragment key={locale}>
+          {index > 0 && <span className="lang-divider" aria-hidden="true">|</span>}
+          <button
+            className={`lang-btn ${currentLocale === locale ? 'active' : ''}`}
+            onClick={() => switchLocale(locale)}
+            aria-pressed={currentLocale === locale}
+          >
+            {locale.toUpperCase()}
+          </button>
+        </React.Fragment>
+      ))}
     </div>
   );
 }

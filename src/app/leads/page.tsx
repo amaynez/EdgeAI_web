@@ -1,8 +1,8 @@
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "../api/auth/[...nextauth]/route";
 import { redirect } from "next/navigation";
-import fs from 'fs';
-import path from 'path';
+import { pool, ensureLeadsTable } from '@/lib/db';
+import { ADMIN_EMAIL } from '@/lib/config';
 import LeadsTable from './LeadsTable';
 import './leads.css';
 
@@ -11,28 +11,23 @@ export const revalidate = 0;
 
 export default async function LeadsPage() {
   const session = await getServerSession(authOptions);
-  
-  if (!session || session.user?.email !== 'armando.maynez@gmail.com') {
+  const userEmail = session?.user?.email;
+
+  if (!session || userEmail !== ADMIN_EMAIL) {
     redirect('/api/auth/signin?callbackUrl=/leads');
   }
 
-  const leadsFilePath = path.join(process.cwd(), 'data', 'leads.json');
-  let leads = [];
+  await ensureLeadsTable();
+  let leads: any[] = [];
 
   try {
-    if (fs.existsSync(leadsFilePath)) {
-      const fileContent = fs.readFileSync(leadsFilePath, 'utf8');
-      leads = JSON.parse(fileContent);
-      
-      // Sort by urgency from most urgent to least urgent
-      leads.sort((a: any, b: any) => {
-        const scoreA = a.qualification?.urgencyScore || 0;
-        const scoreB = b.qualification?.urgencyScore || 0;
-        return scoreB - scoreA; // descending
-      });
-    }
+    const { rows } = await pool.query(
+      `SELECT * FROM leads
+       ORDER BY COALESCE((qualification->>'urgencyScore')::int, 0) DESC`
+    );
+    leads = rows;
   } catch (error) {
-    console.error("Error reading leads file", error);
+    console.error('Error reading leads from DB:', error);
   }
 
   return (
@@ -41,7 +36,7 @@ export default async function LeadsPage() {
         <div>
           <h1 className="brutalist-h1" style={{ fontSize: '2.5rem', marginBottom: '0.5rem', WebkitTextFillColor: 'var(--text-primary)' }}>Lead HQ</h1>
           <div style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
-            Authenticated as: <strong style={{ color: 'var(--text-primary)' }}>{session.user.email}</strong>
+            Authenticated as: <strong style={{ color: 'var(--text-primary)' }}>{userEmail}</strong>
           </div>
         </div>
       </div>

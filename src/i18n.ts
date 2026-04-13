@@ -1,4 +1,5 @@
 import 'server-only';
+import { SUPPORTED_LOCALES, DEFAULT_LOCALE } from '@/lib/locales';
 
 const dictionaries = {
   en: () => import('./locales/en.json').then((module) => module.default),
@@ -6,12 +7,11 @@ const dictionaries = {
 };
 
 export type Locale = keyof typeof dictionaries;
-export const locales = ['en', 'es'] as const;
-export const defaultLocale = 'en';
+export { SUPPORTED_LOCALES as locales, DEFAULT_LOCALE as defaultLocale } from '@/lib/locales';
 
 export const getDictionary = async (locale: string) => {
   if (locale in dictionaries) {
     return dictionaries[locale as Locale]();
   }
-  return dictionaries[defaultLocale as Locale]();
+  return dictionaries[DEFAULT_LOCALE]();
 };

@@ -1,12 +1,14 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { toggleContacted } from './actions';
 
 export default function LeadsTable({ initialLeads }: { initialLeads: any[] }) {
   const [leads, setLeads] = useState(initialLeads);
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [now, setNow] = useState(Date.now());
+  // Track in-flight toggle calls to prevent concurrent updates for the same lead.
+  const pendingToggles = React.useRef<Set<string>>(new Set());
 
   useEffect(() => {
     // Ticking timer: update "now" every minute
@@ -47,17 +49,29 @@ export default function LeadsTable({ initialLeads }: { initialLeads: any[] }) {
   };
 
   const handleToggleContacted = async (id: string, currentState: boolean) => {
+    // Prevent concurrent in-flight calls for the same lead.
+    if (pendingToggles.current.has(id)) return;
+    pendingToggles.current.add(id);
+
     const newState = !currentState;
     
     // Optimistic UI update
-    setLeads(leads.map(l => l.id === id ? { ...l, contacted: newState } : l));
+    setLeads(prev => prev.map(l => l.id === id ? { ...l, contacted: newState } : l));
     
     // Server execution
-    const result = await toggleContacted(id, newState);
-    if (!result.success) {
-      console.error(result.error);
-      // Revert if server failed
-      setLeads(leads.map(l => l.id === id ? { ...l, contacted: currentState } : l));
+    try {
+      const result = await toggleContacted(id, newState);
+      if (!result.success) {
+        console.error(result.error);
+        // Revert if server reported a logical failure
+        setLeads(prev => prev.map(l => l.id === id ? { ...l, contacted: currentState } : l));
+      }
+    } catch (err) {
+      // Revert optimistic update on network / server crash
+      console.error('toggleContacted failed:', err);
+      setLeads(prev => prev.map(l => l.id === id ? { ...l, contacted: currentState } : l));
+    } finally {
+      pendingToggles.current.delete(id);
     }
   };
 
@@ -120,15 +134,15 @@ export default function LeadsTable({ initialLeads }: { initialLeads: any[] }) {
 
               <div className="lead-q-section">
                 <div>
-                  <span className="lead-q">Q: Has your company experienced an AI-related data breach?</span> 
+                  <span className="lead-q">Q: Can you name every AI tool your employees accessed in the last 30 days?</span> 
                   <span className="lead-a">{lead.q1}</span>
                 </div>
                 <div>
-                  <span className="lead-q">Q: What percentage of employee AI usage is currently visible to IT?</span> 
+                  <span className="lead-q">Q: What percentage of your operational data contains PII or highly confidential IP?</span> 
                   <span className="lead-a">{lead.q2}</span>
                 </div>
                 <div>
-                  <span className="lead-q">Q: Would you be open to a 15-minute diagnostic call?</span> 
+                  <span className="lead-q">Q: If your tech vendors suffer a cloud AI breach, is your data exposed?</span> 
                   <span className="lead-a">{lead.q3}</span>
                 </div>
               </div>
