@@ -17,11 +17,23 @@ const dictionaries = {
     role: "Executive Role",
     next: "Continue to Assessment",
     q1: "Can you name every AI tool (public or private) your employees accessed in the last 30 days?",
-    q1opts: ["Yes, we have total control", "No, it's impossible to track", "Not sure"],
+    q1opts: [
+      { value: 'none',     label: "Yes, we have total control" },
+      { value: 'multiple', label: "No, it's impossible to track" },
+      { value: 'unsure',   label: "Not sure" },
+    ],
     q2: "What percentage of your operational data contains PII or highly confidential IP?",
-    q2opts: ["Over 50%", "Under 50%", "Not sure"],
+    q2opts: [
+      { value: 'yes',    label: "Over 50%" },
+      { value: 'no',     label: "Under 50%" },
+      { value: 'unsure', label: "Not sure" },
+    ],
     q3: "If your current tech vendors suffer a cloud AI breach, is your data exposed?",
-    q3opts: ["Yes", "No, we are air-gapped", "We haven't audited this"],
+    q3opts: [
+      { value: 'yes',    label: "Yes" },
+      { value: 'no',     label: "No, we are air-gapped" },
+      { value: 'unsure', label: "We haven't audited this" },
+    ],
     submit: "Execute Audit Request",
     disclaimer: "All submitted information is protected under strict NDA and is 100% LFPDPPP/GDPR compliant. We never share operational data.",
     step1: "1/2",
@@ -41,11 +53,23 @@ const dictionaries = {
     role: "Cargo Directivo",
     next: "Continuar a la Evaluación",
     q1: "¿Puede nombrar todas las herramientas de IA (públicas o privadas) que sus empleados usaron en los últimos 30 días?",
-    q1opts: ["Sí, tenemos control total", "No, es imposible saberlo", "No estoy seguro"],
+    q1opts: [
+      { value: 'none',     label: "Sí, tenemos control total" },
+      { value: 'multiple', label: "No, es imposible saberlo" },
+      { value: 'unsure',   label: "No estoy seguro" },
+    ],
     q2: "¿Qué porcentaje de sus datos operativos contiene información regulada por la LFPDPPP o datos confidenciales?",
-    q2opts: ["Más del 50%", "Menos del 50%", "No estoy seguro"],
+    q2opts: [
+      { value: 'yes',    label: "Más del 50%" },
+      { value: 'no',     label: "Menos del 50%" },
+      { value: 'unsure', label: "No estoy seguro" },
+    ],
     q3: "Si sus proveedores tecnológicos actuales sufren una brecha de IA en la nube, ¿sus datos están expuestos?",
-    q3opts: ["Sí", "No, estamos aislados", "No lo hemos auditado"],
+    q3opts: [
+      { value: 'yes',    label: "Sí" },
+      { value: 'no',     label: "No, estamos aislados" },
+      { value: 'unsure', label: "No lo hemos auditado" },
+    ],
     submit: "Ejecutar Solicitud de Auditoría",
     disclaimer: "Toda la información enviada está protegida bajo un estricto acuerdo de confidencialidad y cumple al 100% con la LFPDPPP. Nunca compartimos datos operativos.",
     step1: "1/2",
@@ -98,6 +122,7 @@ export default function AuditLeadForm({ locale, onClose, onSuccess, onError }: A
       const emailDomain = formData.email.split('@')[1]?.toLowerCase();
       if (emailDomain && GENERIC_DOMAINS.includes(emailDomain)) {
         setError(dict.emailError);
+        setStep(3);
       } else {
         setStep(2);
       }
@@ -182,21 +207,21 @@ export default function AuditLeadForm({ locale, onClose, onSuccess, onError }: A
                 <label htmlFor="q1" className="audit-question">{dict.q1}</label>
                 <select id="q1" name="q1" value={formData.q1} onChange={handleInputChange} className="audit-input" required>
                   <option value="" disabled>-</option>
-                  {dict.q1opts.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+                  {dict.q1opts.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
                 </select>
               </div>
               <div className="audit-field">
                 <label htmlFor="q2" className="audit-question">{dict.q2}</label>
                 <select id="q2" name="q2" value={formData.q2} onChange={handleInputChange} className="audit-input" required>
                   <option value="" disabled>-</option>
-                  {dict.q2opts.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+                  {dict.q2opts.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
                 </select>
               </div>
               <div className="audit-field">
                 <label htmlFor="q3" className="audit-question">{dict.q3}</label>
                 <select id="q3" name="q3" value={formData.q3} onChange={handleInputChange} className="audit-input" required>
                   <option value="" disabled>-</option>
-                  {dict.q3opts.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+                  {dict.q3opts.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
                 </select>
               </div>
                <button type="submit" className="brutalist-button audit-button" disabled={isSubmitting}>

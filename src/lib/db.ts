@@ -1,9 +1,18 @@
 import { Pool } from '@neondatabase/serverless';
 
+// Validate at startup so the app fails fast on misconfiguration.
+const _dbUrl = process.env.DATABASE_URL;
+if (!_dbUrl) {
+  throw new Error('Missing required env DATABASE_URL');
+}
+
 // Singleton pool — Next.js module caching ensures one instance per lambda warm start.
 // Uses the pooler URL (PgBouncer) from Neon, which is safe for serverless.
 const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
+  connectionString: _dbUrl,
+  max: 1,               // Keep at 1 for serverless — each lambda has its own pool.
+  idleTimeoutMillis: 10_000,
+  connectionTimeoutMillis: 5_000,
 });
 
 /**

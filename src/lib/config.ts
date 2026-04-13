@@ -5,4 +5,8 @@
  */
 
 /** The e-mail address that is allowed to access the admin/leads area. */
-export const ADMIN_EMAIL = process.env.GMAIL_USER ?? "";
+const _adminEmail = process.env.GMAIL_USER;
+if (!_adminEmail) {
+  throw new Error('Missing required env GMAIL_USER: set admin email');
+}
+export const ADMIN_EMAIL: string = _adminEmail;

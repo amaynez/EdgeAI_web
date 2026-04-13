@@ -24,7 +24,52 @@ const ALLOWED_ATTRS: Record<string, Set<string>> = {
 };
 
 // Attribute values that must NOT contain javascript: or data: URIs.
+// Kept as a secondary fallback after canonicalization.
 const UNSAFE_HREF_RE = /^\s*(?:javascript|data|vbscript):/i;
+
+// Strict allowlist of URL schemes that are safe in href attributes.
+const ALLOWED_HREF_SCHEMES = new Set(['http', 'https', 'mailto', 'tel']);
+
+/**
+ * Canonicalize an href attribute value to expose obfuscated dangerous schemes.
+ * Steps: decode HTML entities → strip control chars/nulls → URL-decode → lowercase.
+ * Returns the scheme (e.g. "javascript") or an empty string for relative URLs.
+ */
+function canonicalizeHref(raw: string): { safe: boolean; canonical: string } {
+  // 1. Decode common HTML entities
+  let s = raw
+    .replace(/&amp;/gi, '&')
+    .replace(/&lt;/gi, '<')
+    .replace(/&gt;/gi, '>')
+    .replace(/&quot;/gi, '"')
+    .replace(/&#x27;/gi, "'")
+    .replace(/&#(\d+);/g, (_, n) => String.fromCharCode(Number(n)))
+    .replace(/&#x([0-9a-f]+);/gi, (_, h) => String.fromCharCode(parseInt(h, 16)));
+
+  // 2. Strip null bytes and ASCII control characters (\x00-\x1F, \x7F)
+  // eslint-disable-next-line no-control-regex
+  s = s.replace(/[\x00-\x1F\x7F]/g, '');
+
+  // 3. Collapse repeated whitespace/control sequences and trim
+  s = s.trim();
+
+  // 4. URL-decode percent-encodings (best-effort; ignore malformed)
+  try { s = decodeURIComponent(s); } catch { /* leave as-is */ }
+
+  // 5. Lowercase for scheme comparison
+  const canonical = s.toLowerCase();
+
+  // 6. Extract scheme
+  const schemeMatch = canonical.match(/^([a-z][a-z0-9+\-.]*):/);
+  if (!schemeMatch) {
+    // Relative URL or anchor — safe if it also passes the regex fallback
+    return { safe: !UNSAFE_HREF_RE.test(canonical), canonical };
+  }
+
+  const scheme = schemeMatch[1];
+  const safe = ALLOWED_HREF_SCHEMES.has(scheme) && !UNSAFE_HREF_RE.test(canonical);
+  return { safe, canonical };
+}
 
 /**
  * Strip a single tag to its safe form, or drop it entirely.
@@ -65,8 +110,11 @@ function sanitizeTag(tagStr: string): string {
 
     if (!allowedForTag.has(attrName)) continue;
 
-    // Extra check: href must not be a JS/data URI
-    if (attrName === 'href' && UNSAFE_HREF_RE.test(attrValue)) continue;
+    // Extra check: href must pass canonicalization + scheme allowlist
+    if (attrName === 'href') {
+      const { safe } = canonicalizeHref(attrValue);
+      if (!safe) continue;
+    }
 
     // Reject values that contain event-handler-like patterns in inline styles
     if (attrName === 'style' && /expression\s*\(/i.test(attrValue)) continue;

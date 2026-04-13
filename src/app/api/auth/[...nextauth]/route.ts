@@ -11,7 +11,7 @@ export const authOptions: NextAuthOptions = {
   ],
   callbacks: {
     async signIn({ user }) {
-      if (user.email === ADMIN_EMAIL) {
+      if ((user.email ?? '').trim().toLowerCase() === ADMIN_EMAIL.trim().toLowerCase()) {
         return true;
       }
       return false; // Deny access to anyone else

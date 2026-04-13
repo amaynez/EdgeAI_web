@@ -27,6 +27,14 @@ function getClientIp(request: Request): string {
 
 function isRateLimited(ip: string): boolean {
   const now = Date.now();
+
+  // Prune stale entries to prevent unbounded Map growth.
+  for (const [key, rec] of rateLimitStore) {
+    if (now - rec.windowStart > RATE_LIMIT_WINDOW_MS) {
+      rateLimitStore.delete(key);
+    }
+  }
+
   const entry = rateLimitStore.get(ip);
 
   if (!entry || now - entry.windowStart > RATE_LIMIT_WINDOW_MS) {
@@ -53,6 +61,18 @@ const Q3_VALUES = ['yes', 'no', 'unsure'] as const;
 type Q1Value = typeof Q1_VALUES[number];
 type Q2Value = typeof Q2_VALUES[number];
 type Q3Value = typeof Q3_VALUES[number];
+
+// ---------------------------------------------------------------------------
+// HTML-escape helper — prevents XSS when interpolating user data into email HTML.
+// ---------------------------------------------------------------------------
+function escapeHtml(value: string | undefined | null): string {
+  return String(value ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#x27;');
+}
 
 function validateLeadPayload(data: Record<string, unknown>): string[] {
   const errors: string[] = [];
@@ -200,7 +220,7 @@ Assessment Answers:
       `INSERT INTO leads (id, name, email, company, role, q1, q2, q3, qualification)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
       [
-        Date.now().toString(),
+        crypto.randomUUID(),
         name,
         email,
         company,
@@ -229,7 +249,7 @@ Assessment Answers:
         from: user,
         to: user, // Send to yourself
         replyTo: email, // This allows you to just hit "Reply" and send the draft to them.
-        subject: `[Lead: ${aiInsights.potentialScore}/10] AI Audit Request: ${company}`,
+        subject: `[Lead: ${aiInsights.potentialScore}/10] AI Audit Request: ${escapeHtml(company)}`,
         html: `
           <div style="font-family: sans-serif; max-width: 600px; margin: auto; padding: 20px; color: #333; line-height: 1.6;">
             <h2 style="border-bottom: 2px solid #000; padding-bottom: 10px;">New AI Audit Lead Captured</h2>
@@ -242,28 +262,28 @@ Assessment Answers:
               <p><strong>Potential Score:</strong>
                 <span style="background-color: ${aiInsights.potentialScore >= 7 ? '#28a745' : '#e9ecef'}; color: ${aiInsights.potentialScore >= 7 ? '#fff' : '#000'}; padding: 2px 8px; border-radius: 12px; font-weight: bold;">${aiInsights.potentialScore}/10</span>
               </p>
-              <p><strong>Analysis:</strong> ${aiInsights.analysis}</p>
+              <p><strong>Analysis:</strong> ${escapeHtml(aiInsights.analysis)}</p>
             </div>
 
             <h3 style="color: #000; border-bottom: 1px solid #ddd; padding-bottom: 4px;">Executive Contact Identity</h3>
             <ul style="list-style-type: none; padding-left: 0;">
-              <li style="margin-bottom: 8px;"><strong>Name:</strong> ${name}</li>
-              <li style="margin-bottom: 8px;"><strong>Role:</strong> ${role}</li>
-              <li style="margin-bottom: 8px;"><strong>Company:</strong> ${company}</li>
-              <li style="margin-bottom: 8px;"><strong>Email:</strong> <a href="mailto:${email}" style="color: #007bff; text-decoration: none;">${email}</a></li>
+              <li style="margin-bottom: 8px;"><strong>Name:</strong> ${escapeHtml(name)}</li>
+              <li style="margin-bottom: 8px;"><strong>Role:</strong> ${escapeHtml(role)}</li>
+              <li style="margin-bottom: 8px;"><strong>Company:</strong> ${escapeHtml(company)}</li>
+              <li style="margin-bottom: 8px;"><strong>Email:</strong> <a href="mailto:${escapeHtml(email)}" style="color: #007bff; text-decoration: none;">${escapeHtml(email)}</a></li>
             </ul>
 
             <h3 style="color: #000; border-bottom: 1px solid #ddd; padding-bottom: 4px; margin-top: 24px;">Vulnerability Assessment Answers</h3>
             <ul style="padding-left: 20px;">
-              <li><strong>Q1: AI tools accessed (last 30 days)?</strong><br> ${q1 || 'Not Answered'}</li>
-              <li style="margin-top: 10px;"><strong>Q2: Operational data containing PII/IP?</strong><br> ${q2 || 'Not Answered'}</li>
-              <li style="margin-top: 10px;"><strong>Q3: Data exposed via cloud AI breach?</strong><br> ${q3 || 'Not Answered'}</li>
+              <li><strong>Q1: AI tools accessed (last 30 days)?</strong><br> ${escapeHtml(q1)}</li>
+              <li style="margin-top: 10px;"><strong>Q2: Operational data containing PII/IP?</strong><br> ${escapeHtml(q2)}</li>
+              <li style="margin-top: 10px;"><strong>Q3: Data exposed via cloud AI breach?</strong><br> ${escapeHtml(q3)}</li>
             </ul>
 
             <h3 style="color: #000; border-bottom: 1px solid #ddd; padding-bottom: 4px; margin-top: 24px;">Drafted Email Response (via Gemini)</h3>
             <div style="background-color: #fff; border: 1px solid #ddd; padding: 15px; border-radius: 8px; font-family: sans-serif; white-space: pre-wrap;">${aiInsights.draftEmail}</div>
             
-            <p style="font-size: 0.9em; color: #666; margin-top: 20px;"><em>You can just click 'Reply' on this email to reply back directly to ${name}! Just copy formatting from the drafted response.</em></p>
+            <p style="font-size: 0.9em; color: #666; margin-top: 20px;"><em>You can just click 'Reply' on this email to reply back directly to ${escapeHtml(name)}! Just copy formatting from the drafted response.</em></p>
           </div>
         `,
       };

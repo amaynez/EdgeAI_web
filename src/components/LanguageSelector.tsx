@@ -26,10 +26,11 @@ export default function LanguageSelector({ currentLocale }: { currentLocale: str
     <div className="language-selector">
       {SUPPORTED_LOCALES.map((locale, index) => (
         <React.Fragment key={locale}>
-          {index > 0 && <span className="lang-divider">|</span>}
+          {index > 0 && <span className="lang-divider" aria-hidden="true">|</span>}
           <button
             className={`lang-btn ${currentLocale === locale ? 'active' : ''}`}
             onClick={() => switchLocale(locale)}
+            aria-pressed={currentLocale === locale}
           >
             {locale.toUpperCase()}
           </button>
