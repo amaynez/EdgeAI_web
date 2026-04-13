@@ -110,10 +110,14 @@ function sanitizeTag(tagStr: string): string {
 
     if (!allowedForTag.has(attrName)) continue;
 
-    // Extra check: href must pass canonicalization + scheme allowlist
+    // Extra check: href must pass canonicalization + scheme allowlist.
+    // Use the canonical (decoded, normalized) value in the output so that
+    // encoded/obfuscated variants cannot sneak through.
     if (attrName === 'href') {
-      const { safe } = canonicalizeHref(attrValue);
+      const { safe, canonical } = canonicalizeHref(attrValue);
       if (!safe) continue;
+      safeAttrs.push(`${attrName}="${canonical.replace(/"/g, '&quot;')}"`);
+      continue;
     }
 
     // Reject values that contain event-handler-like patterns in inline styles

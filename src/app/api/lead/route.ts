@@ -8,6 +8,17 @@ import { sanitizeHtml } from '@/lib/sanitize';
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
 
 // ---------------------------------------------------------------------------
+// Cached DB table initializer — avoids a CREATE TABLE round-trip on every
+// request. Set to false on cold-start; flipped to true after first success.
+// ---------------------------------------------------------------------------
+let tableInitialized = false;
+async function ensureTableOnce(): Promise<void> {
+  if (tableInitialized) return;
+  await ensureLeadsTable();
+  tableInitialized = true;
+}
+
+// ---------------------------------------------------------------------------
 // In-memory rate limiter (10 requests per IP per 15-minute window).
 // NOTE: In a multi-instance/serverless environment each cold-start gets its
 // own Map. For stricter limits use a shared store such as Upstash Redis.
@@ -197,11 +208,14 @@ Assessment Answers:
         
         try {
           const parsed = JSON.parse(responseText);
-          // Sanitize the AI-generated HTML email draft before persisting.
-          // Plain-text fields (analysis, scores) are stored as text and are
-          // safe; only draftEmail is HTML and needs allow-list sanitization.
+          // Explicitly extract only the expected fields so that unexpected
+          // properties in the AI response cannot pollute aiInsights (no spread).
+          // Coerce numeric scores to numbers with safe defaults.
           aiInsights = {
-            ...parsed,
+            urgencyScore:  Number.isFinite(Number(parsed.urgencyScore))  ? Number(parsed.urgencyScore)  : 0,
+            potentialScore: Number.isFinite(Number(parsed.potentialScore)) ? Number(parsed.potentialScore) : 0,
+            analysis:  typeof parsed.analysis === 'string'  ? parsed.analysis  : 'AI Analysis Failed or Unavailable.',
+            // Sanitize the AI-generated HTML email draft before persisting.
             draftEmail: sanitizeHtml(parsed.draftEmail ?? ''),
           };
         } catch (e) {
@@ -215,7 +229,7 @@ Assessment Answers:
     }
   
     // --- 2. Persist to Neon Postgres (atomic single INSERT — no race condition) ---
-    await ensureLeadsTable();
+    await ensureTableOnce();
     await pool.query(
       `INSERT INTO leads (id, name, email, company, role, q1, q2, q3, qualification)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
@@ -270,7 +284,7 @@ Assessment Answers:
               <li style="margin-bottom: 8px;"><strong>Name:</strong> ${escapeHtml(name)}</li>
               <li style="margin-bottom: 8px;"><strong>Role:</strong> ${escapeHtml(role)}</li>
               <li style="margin-bottom: 8px;"><strong>Company:</strong> ${escapeHtml(company)}</li>
-              <li style="margin-bottom: 8px;"><strong>Email:</strong> <a href="mailto:${escapeHtml(email)}" style="color: #007bff; text-decoration: none;">${escapeHtml(email)}</a></li>
+              <li style="margin-bottom: 8px;"><strong>Email:</strong> <a href="mailto:${encodeURIComponent(email)}" style="color: #007bff; text-decoration: none;">${escapeHtml(email)}</a></li>
             </ul>
 
             <h3 style="color: #000; border-bottom: 1px solid #ddd; padding-bottom: 4px; margin-top: 24px;">Vulnerability Assessment Answers</h3>

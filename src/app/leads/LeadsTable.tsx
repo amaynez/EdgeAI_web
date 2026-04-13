@@ -63,9 +63,13 @@ export default function LeadsTable({ initialLeads }: { initialLeads: any[] }) {
       const result = await toggleContacted(id, newState);
       if (!result.success) {
         console.error(result.error);
-        // Revert if server failed
+        // Revert if server reported a logical failure
         setLeads(prev => prev.map(l => l.id === id ? { ...l, contacted: currentState } : l));
       }
+    } catch (err) {
+      // Revert optimistic update on network / server crash
+      console.error('toggleContacted failed:', err);
+      setLeads(prev => prev.map(l => l.id === id ? { ...l, contacted: currentState } : l));
     } finally {
       pendingToggles.current.delete(id);
     }
