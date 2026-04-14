@@ -2,7 +2,7 @@
 import { useState } from 'react';
 import AuditLeadForm from './AuditLeadForm';
 
-export default function DynamicCTA({ ctaText, locale }: { ctaText: string, locale: string }) {
+export default function DynamicCTA({ ctaText, locale, isHero = false }: { ctaText: string, locale: string, isHero?: boolean }) {
   const [isOpen, setIsOpen] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
@@ -18,8 +18,10 @@ export default function DynamicCTA({ ctaText, locale }: { ctaText: string, local
     setSuccessMessage('');
   };
 
+  const Wrapper = isHero ? 'div' : 'section';
+
   return (
-    <section className="cta-section">
+    <Wrapper className={isHero ? "hero-cta-wrapper" : "cta-section"}>
       <button className="brutalist-button cta-button" onClick={() => setIsOpen(true)}>
         {ctaText} <span className="cta-arrow">&gt;</span>
       </button>
@@ -44,6 +46,6 @@ export default function DynamicCTA({ ctaText, locale }: { ctaText: string, local
           onError={handleError}
         />
       )}
-    </section>
+    </Wrapper>
   );
 }

@@ -190,6 +190,7 @@ body {
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
+  text-wrap: balance;
 }
 
 .brutalist-subh1 {
@@ -201,6 +202,12 @@ body {
   max-width: 680px;
   margin: 0 auto;
   padding-top: 0.5rem;
+}
+
+.hero-cta-wrapper {
+  margin-top: 2rem;
+  display: flex;
+  justify-content: center;
 }
 
 /* ─────────────────────────────────────────
