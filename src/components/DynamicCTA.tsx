@@ -18,8 +18,10 @@ export default function DynamicCTA({ ctaText, locale, isHero = false }: { ctaTex
     setSuccessMessage('');
   };
 
+  const Wrapper = isHero ? 'div' : 'section';
+
   return (
-    <div className={isHero ? "hero-cta-wrapper" : "cta-section"}>
+    <Wrapper className={isHero ? "hero-cta-wrapper" : "cta-section"}>
       <button className="brutalist-button cta-button" onClick={() => setIsOpen(true)}>
         {ctaText} <span className="cta-arrow">&gt;</span>
       </button>
@@ -44,6 +46,6 @@ export default function DynamicCTA({ ctaText, locale, isHero = false }: { ctaTex
           onError={handleError}
         />
       )}
-    </div>
+    </Wrapper>
   );
 }
