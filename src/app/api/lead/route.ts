@@ -62,6 +62,8 @@ function isRateLimited(ip: string): boolean {
 // Validation helpers
 // ---------------------------------------------------------------------------
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const LINKEDIN_REGEX = /^https:\/\/(www\.)?linkedin\.com\/in\/[a-zA-Z0-9_-]+\/?$/;
+const GENERIC_DOMAINS = ['gmail.com', 'yahoo.com', 'hotmail.com', 'outlook.com', 'aol.com', 'icloud.com'];
 
 // Allowed enum values for the three qualification questions.
 // Keep these in sync with the values emitted by the front-end form.
@@ -95,6 +97,36 @@ function validateLeadPayload(data: Record<string, unknown>): string[] {
     { key: 'company', maxLen: 150 },
     { key: 'role',    maxLen: 100 },
   ];
+
+  // --- LinkedIn validation based on email domain ---
+  let isGenericEmail = false;
+  if (typeof data.email === 'string') {
+    const emailDomain = data.email.split('@')[1]?.toLowerCase();
+    if (emailDomain && GENERIC_DOMAINS.includes(emailDomain)) {
+      isGenericEmail = true;
+    }
+  }
+
+  const linkedinVal = data.linkedin;
+  if (isGenericEmail) {
+    if (!linkedinVal || typeof linkedinVal !== 'string' || linkedinVal.trim() === '') {
+      errors.push('"linkedin" is required for generic email providers.');
+    }
+  }
+
+  if (linkedinVal !== undefined && linkedinVal !== null && linkedinVal !== '') {
+    if (typeof linkedinVal !== 'string') {
+      errors.push(`"linkedin" must be a string.`);
+    } else {
+      const trimmedLinkedin = linkedinVal.trim();
+      if (trimmedLinkedin.length > 255) {
+        errors.push(`"linkedin" must be at most 255 characters.`);
+      }
+      if (!LINKEDIN_REGEX.test(trimmedLinkedin)) {
+        errors.push('"linkedin" must be a valid LinkedIn profile URL.');
+      }
+    }
+  }
 
   for (const { key, maxLen } of stringFields) {
     const val = data[key];
@@ -165,9 +197,9 @@ export async function POST(request: Request) {
     }
 
     // Safe to destructure after validation
-    const { name, email, company, role, q1, q2, q3 } = data as {
+    const { name, email, company, role, q1, q2, q3, linkedin } = data as {
       name: string; email: string; company: string; role: string;
-      q1?: Q1Value; q2?: Q2Value; q3?: Q3Value;
+      q1?: Q1Value; q2?: Q2Value; q3?: Q3Value; linkedin?: string;
     };
 
     // --- 1. AI Qualification using Gemini ---
@@ -196,6 +228,7 @@ Lead Profile:
 - Name: ${name}
 - Role: ${role}
 - Company: ${company}
+${linkedin ? `- LinkedIn: ${linkedin}` : ''}
 
 Assessment Answers:
 1. AI tools accessed (last 30 days)? ${q1}
@@ -230,9 +263,12 @@ Assessment Answers:
   
     // --- 2. Persist to Neon Postgres (atomic single INSERT — no race condition) ---
     await ensureTableOnce();
+
+    const normalizedLinkedin = linkedin?.trim() === '' ? null : linkedin;
+
     await pool.query(
-      `INSERT INTO leads (id, name, email, company, role, q1, q2, q3, qualification)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
+      `INSERT INTO leads (id, name, email, company, role, q1, q2, q3, qualification, linkedin)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
       [
         crypto.randomUUID(),
         name,
@@ -243,6 +279,7 @@ Assessment Answers:
         q2 ?? null,
         q3 ?? null,
         JSON.stringify(aiInsights),
+        normalizedLinkedin,
       ]
     );
 
@@ -285,6 +322,7 @@ Assessment Answers:
               <li style="margin-bottom: 8px;"><strong>Role:</strong> ${escapeHtml(role)}</li>
               <li style="margin-bottom: 8px;"><strong>Company:</strong> ${escapeHtml(company)}</li>
               <li style="margin-bottom: 8px;"><strong>Email:</strong> <a href="mailto:${encodeURIComponent(email)}" style="color: #007bff; text-decoration: none;">${escapeHtml(email)}</a></li>
+              ${linkedin ? `<li style="margin-bottom: 8px;"><strong>LinkedIn:</strong> <a href="${escapeHtml(linkedin)}" target="_blank" rel="noopener noreferrer" style="color: #007bff; text-decoration: none;">${escapeHtml(linkedin)}</a></li>` : ''}
             </ul>
 
             <h3 style="color: #000; border-bottom: 1px solid #ddd; padding-bottom: 4px; margin-top: 24px;">Vulnerability Assessment Answers</h3>

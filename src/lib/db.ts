@@ -33,9 +33,20 @@ export async function ensureLeadsTable(): Promise<void> {
       q2            TEXT,
       q3            TEXT,
       contacted     BOOLEAN     NOT NULL DEFAULT FALSE,
-      qualification JSONB
+      qualification JSONB,
+      linkedin      TEXT
     )
   `);
+
+  // In case the table was created before the 'linkedin' column existed, attempt to add it safely
+  try {
+    await pool.query(`ALTER TABLE leads ADD COLUMN linkedin TEXT`);
+  } catch (err: any) {
+    // Ignore if the column already exists
+    if (err.code !== '42701') {
+      console.warn('Failed to add linkedin column to leads table, it may already exist:', err);
+    }
+  }
 }
 
 export { pool };
