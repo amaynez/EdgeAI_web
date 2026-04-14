@@ -96,6 +96,22 @@ function validateLeadPayload(data: Record<string, unknown>): string[] {
     { key: 'role',    maxLen: 100 },
   ];
 
+  // --- Optional string fields ---
+  const optionalStringFields: Array<{ key: string; maxLen: number }> = [
+    { key: 'linkedin', maxLen: 255 },
+  ];
+
+  for (const { key, maxLen } of optionalStringFields) {
+    const val = data[key];
+    if (val !== undefined && val !== null && val !== '') {
+      if (typeof val !== 'string') {
+        errors.push(`"${key}" must be a string.`);
+      } else if (val.length > maxLen) {
+        errors.push(`"${key}" must be at most ${maxLen} characters.`);
+      }
+    }
+  }
+
   for (const { key, maxLen } of stringFields) {
     const val = data[key];
     if (!val || typeof val !== 'string' || val.trim() === '') {
@@ -165,9 +181,9 @@ export async function POST(request: Request) {
     }
 
     // Safe to destructure after validation
-    const { name, email, company, role, q1, q2, q3 } = data as {
+    const { name, email, company, role, q1, q2, q3, linkedin } = data as {
       name: string; email: string; company: string; role: string;
-      q1?: Q1Value; q2?: Q2Value; q3?: Q3Value;
+      q1?: Q1Value; q2?: Q2Value; q3?: Q3Value; linkedin?: string;
     };
 
     // --- 1. AI Qualification using Gemini ---
@@ -196,6 +212,7 @@ Lead Profile:
 - Name: ${name}
 - Role: ${role}
 - Company: ${company}
+${linkedin ? `- LinkedIn: ${linkedin}` : ''}
 
 Assessment Answers:
 1. AI tools accessed (last 30 days)? ${q1}
@@ -230,9 +247,20 @@ Assessment Answers:
   
     // --- 2. Persist to Neon Postgres (atomic single INSERT — no race condition) ---
     await ensureTableOnce();
+
+    // In case the table was created before the 'linkedin' column existed, attempt to add it safely
+    try {
+      await pool.query(`ALTER TABLE leads ADD COLUMN linkedin TEXT`);
+    } catch (err: any) {
+      // Ignore if the column already exists
+      if (err.code !== '42701') {
+        console.warn('Failed to add linkedin column to leads table, it may already exist:', err);
+      }
+    }
+
     await pool.query(
-      `INSERT INTO leads (id, name, email, company, role, q1, q2, q3, qualification)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
+      `INSERT INTO leads (id, name, email, company, role, q1, q2, q3, qualification, linkedin)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
       [
         crypto.randomUUID(),
         name,
@@ -243,6 +271,7 @@ Assessment Answers:
         q2 ?? null,
         q3 ?? null,
         JSON.stringify(aiInsights),
+        linkedin ?? null,
       ]
     );
 
@@ -285,6 +314,7 @@ Assessment Answers:
               <li style="margin-bottom: 8px;"><strong>Role:</strong> ${escapeHtml(role)}</li>
               <li style="margin-bottom: 8px;"><strong>Company:</strong> ${escapeHtml(company)}</li>
               <li style="margin-bottom: 8px;"><strong>Email:</strong> <a href="mailto:${encodeURIComponent(email)}" style="color: #007bff; text-decoration: none;">${escapeHtml(email)}</a></li>
+              ${linkedin ? `<li style="margin-bottom: 8px;"><strong>LinkedIn:</strong> <a href="${escapeHtml(linkedin)}" target="_blank" rel="noopener noreferrer" style="color: #007bff; text-decoration: none;">${escapeHtml(linkedin)}</a></li>` : ''}
             </ul>
 
             <h3 style="color: #000; border-bottom: 1px solid #ddd; padding-bottom: 4px; margin-top: 24px;">Vulnerability Assessment Answers</h3>

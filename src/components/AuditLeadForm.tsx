@@ -12,9 +12,11 @@ const dictionaries = {
   en: {
     title: "Request Audit",
     name: "Full Name",
-    email: "Corporate Email",
+    email: "Professional Email",
     company: "Company",
     role: "Executive Role",
+    linkedin: "LinkedIn Profile URL",
+    linkedinPlaceholder: "https://linkedin.com/in/yourprofile",
     next: "Continue to Assessment",
     q1: "Can you name every AI tool (public or private) your employees accessed in the last 30 days?",
     q1opts: [
@@ -41,16 +43,19 @@ const dictionaries = {
     emailError: "Please use a corporate email. Generic domains (gmail, yahoo, etc.) are restricted.",
     requiredError: "All fields are required.",
     invalidEmailError: "Please enter a valid email address.",
-    fallbackTitle: "Corporate Email Required",
-    fallbackMsg: "Customized AI security audits are reserved for verified corporate identities. Please re-enter your request using a company email address to proceed.",
+    fallbackTitle: "Professional Identity Verification",
+    fallbackMsg: "We noticed you're using a generic email provider. While we prioritize verified corporate domains, independent professionals may proceed by providing their LinkedIn profile for manual review.",
+    submitAnyway: "Verify & Continue",
     close: "Close"
   },
   es: {
     title: "Solicitar Auditoría",
     name: "Nombre Completo",
-    email: "Correo Corporativo",
+    email: "Correo Profesional",
     company: "Empresa",
     role: "Cargo Directivo",
+    linkedin: "URL del Perfil de LinkedIn",
+    linkedinPlaceholder: "https://linkedin.com/in/tuperfil",
     next: "Continuar a la Evaluación",
     q1: "¿Puede nombrar todas las herramientas de IA (públicas o privadas) que sus empleados usaron en los últimos 30 días?",
     q1opts: [
@@ -77,8 +82,9 @@ const dictionaries = {
     emailError: "Por favor use un correo corporativo. Dominios genéricos (gmail, yahoo, etc.) no están permitidos.",
     requiredError: "Todos los campos son obligatorios.",
     invalidEmailError: "Por favor ingrese una dirección de correo válida.",
-    fallbackTitle: "Correo Corporativo Requerido",
-    fallbackMsg: "Las auditorías de seguridad de IA personalizadas están reservadas para identidades corporativas verificadas. Por favor, vuelve a ingresar tu solicitud usando una dirección de correo de tu empresa para continuar.",
+    fallbackTitle: "Verificación de Identidad Profesional",
+    fallbackMsg: "Notamos que usas un proveedor de correo genérico. Aunque priorizamos dominios corporativos verificados, los profesionales independientes pueden continuar proporcionando su perfil de LinkedIn para revisión manual.",
+    submitAnyway: "Verificar y Continuar",
     close: "Cerrar"
   }
 };
@@ -91,7 +97,7 @@ export default function AuditLeadForm({ locale, onClose, onSuccess, onError }: A
   const [step, setStep] = useState(1);
   const [formData, setFormData] = useState({
     name: '', email: '', company: '', role: '',
-    q1: '', q2: '', q3: ''
+    q1: '', q2: '', q3: '', linkedin: ''
   });
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -121,7 +127,6 @@ export default function AuditLeadForm({ locale, onClose, onSuccess, onError }: A
     if (validateStep1()) {
       const emailDomain = formData.email.split('@')[1]?.toLowerCase();
       if (emailDomain && GENERIC_DOMAINS.includes(emailDomain)) {
-        setError(dict.emailError);
         setStep(3);
       } else {
         setStep(2);
@@ -231,13 +236,29 @@ export default function AuditLeadForm({ locale, onClose, onSuccess, onError }: A
           )}
 
           {step === 3 && (
-            <div className="audit-step" style={{ textAlign: "center", padding: "2rem 0" }}>
-              <p style={{ fontSize: "1.1rem", lineHeight: "1.6", color: "var(--text-secondary)", marginBottom: "2rem" }}>
+            <div className="audit-step" style={{ textAlign: "center", padding: "1rem 0" }}>
+              <p style={{ fontSize: "1.0rem", lineHeight: "1.6", color: "var(--text-secondary)", marginBottom: "1.5rem" }}>
                 {dict.fallbackMsg}
               </p>
-              <button type="button" onClick={onClose} className="brutalist-button audit-button">
-                {dict.close}
-              </button>
+              <div className="audit-field" style={{ textAlign: "left", marginBottom: "1.5rem" }}>
+                <label htmlFor="linkedin">{dict.linkedin}</label>
+                <input id="linkedin" type="url" name="linkedin" placeholder={dict.linkedinPlaceholder} value={formData.linkedin} onChange={handleInputChange} className="audit-input" required />
+              </div>
+              <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center' }}>
+                 <button type="button" onClick={() => {
+                   if (!formData.linkedin) {
+                     setError(dict.requiredError);
+                   } else {
+                     setError('');
+                     setStep(2);
+                   }
+                 }} className="brutalist-button audit-button">
+                   {dict.submitAnyway}
+                 </button>
+                 <button type="button" onClick={onClose} className="brutalist-button audit-button" style={{ background: 'transparent', color: 'var(--text-primary)', border: '1px solid var(--border-color)' }}>
+                   {dict.close}
+                 </button>
+              </div>
             </div>
           )}
         </form>
