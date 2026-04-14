@@ -62,6 +62,8 @@ function isRateLimited(ip: string): boolean {
 // Validation helpers
 // ---------------------------------------------------------------------------
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const LINKEDIN_REGEX = /^https:\/\/(www\.)?linkedin\.com\/in\/[a-zA-Z0-9_-]+\/?$/;
+const GENERIC_DOMAINS = ['gmail.com', 'yahoo.com', 'hotmail.com', 'outlook.com', 'aol.com', 'icloud.com'];
 
 // Allowed enum values for the three qualification questions.
 // Keep these in sync with the values emitted by the front-end form.
@@ -96,18 +98,32 @@ function validateLeadPayload(data: Record<string, unknown>): string[] {
     { key: 'role',    maxLen: 100 },
   ];
 
-  // --- Optional string fields ---
-  const optionalStringFields: Array<{ key: string; maxLen: number }> = [
-    { key: 'linkedin', maxLen: 255 },
-  ];
+  // --- LinkedIn validation based on email domain ---
+  let isGenericEmail = false;
+  if (typeof data.email === 'string') {
+    const emailDomain = data.email.split('@')[1]?.toLowerCase();
+    if (emailDomain && GENERIC_DOMAINS.includes(emailDomain)) {
+      isGenericEmail = true;
+    }
+  }
 
-  for (const { key, maxLen } of optionalStringFields) {
-    const val = data[key];
-    if (val !== undefined && val !== null && val !== '') {
-      if (typeof val !== 'string') {
-        errors.push(`"${key}" must be a string.`);
-      } else if (val.length > maxLen) {
-        errors.push(`"${key}" must be at most ${maxLen} characters.`);
+  const linkedinVal = data.linkedin;
+  if (isGenericEmail) {
+    if (!linkedinVal || typeof linkedinVal !== 'string' || linkedinVal.trim() === '') {
+      errors.push('"linkedin" is required for generic email providers.');
+    }
+  }
+
+  if (linkedinVal !== undefined && linkedinVal !== null && linkedinVal !== '') {
+    if (typeof linkedinVal !== 'string') {
+      errors.push(`"linkedin" must be a string.`);
+    } else {
+      const trimmedLinkedin = linkedinVal.trim();
+      if (trimmedLinkedin.length > 255) {
+        errors.push(`"linkedin" must be at most 255 characters.`);
+      }
+      if (!LINKEDIN_REGEX.test(trimmedLinkedin)) {
+        errors.push('"linkedin" must be a valid LinkedIn profile URL.');
       }
     }
   }
@@ -248,15 +264,7 @@ Assessment Answers:
     // --- 2. Persist to Neon Postgres (atomic single INSERT — no race condition) ---
     await ensureTableOnce();
 
-    // In case the table was created before the 'linkedin' column existed, attempt to add it safely
-    try {
-      await pool.query(`ALTER TABLE leads ADD COLUMN linkedin TEXT`);
-    } catch (err: any) {
-      // Ignore if the column already exists
-      if (err.code !== '42701') {
-        console.warn('Failed to add linkedin column to leads table, it may already exist:', err);
-      }
-    }
+    const normalizedLinkedin = linkedin?.trim() === '' ? null : linkedin;
 
     await pool.query(
       `INSERT INTO leads (id, name, email, company, role, q1, q2, q3, qualification, linkedin)
@@ -271,7 +279,7 @@ Assessment Answers:
         q2 ?? null,
         q3 ?? null,
         JSON.stringify(aiInsights),
-        linkedin ?? null,
+        normalizedLinkedin,
       ]
     );
 

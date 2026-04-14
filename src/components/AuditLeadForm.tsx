@@ -43,6 +43,7 @@ const dictionaries = {
     emailError: "Please use a corporate email. Generic domains (gmail, yahoo, etc.) are restricted.",
     requiredError: "All fields are required.",
     invalidEmailError: "Please enter a valid email address.",
+    invalidLinkedinError: "Please enter a valid LinkedIn profile URL.",
     fallbackTitle: "Professional Identity Verification",
     fallbackMsg: "We noticed you're using a generic email provider. While we prioritize verified corporate domains, independent professionals may proceed by providing their LinkedIn profile for manual review.",
     submitAnyway: "Verify & Continue",
@@ -82,6 +83,7 @@ const dictionaries = {
     emailError: "Por favor use un correo corporativo. Dominios genéricos (gmail, yahoo, etc.) no están permitidos.",
     requiredError: "Todos los campos son obligatorios.",
     invalidEmailError: "Por favor ingrese una dirección de correo válida.",
+    invalidLinkedinError: "Por favor ingrese una URL válida de perfil de LinkedIn.",
     fallbackTitle: "Verificación de Identidad Profesional",
     fallbackMsg: "Notamos que usas un proveedor de correo genérico. Aunque priorizamos dominios corporativos verificados, los profesionales independientes pueden continuar proporcionando su perfil de LinkedIn para revisión manual.",
     submitAnyway: "Verificar y Continuar",
@@ -246,12 +248,20 @@ export default function AuditLeadForm({ locale, onClose, onSuccess, onError }: A
               </div>
               <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center' }}>
                  <button type="button" onClick={() => {
-                   if (!formData.linkedin) {
+                   const trimmedUrl = formData.linkedin.trim();
+                   if (!trimmedUrl) {
                      setError(dict.requiredError);
-                   } else {
-                     setError('');
-                     setStep(2);
+                     return;
                    }
+
+                   const LINKEDIN_REGEX = /^https:\/\/(www\.)?linkedin\.com\/in\/[a-zA-Z0-9_-]+\/?$/;
+                   if (!LINKEDIN_REGEX.test(trimmedUrl)) {
+                     setError(dict.invalidLinkedinError);
+                     return;
+                   }
+
+                   setError('');
+                   setStep(2);
                  }} className="brutalist-button audit-button">
                    {dict.submitAnyway}
                  </button>

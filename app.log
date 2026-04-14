@@ -10,3 +10,4 @@
 ○ Compiling /[locale] ...
  GET /en 200 in 6.2s (next.js: 5.3s, proxy.ts: 522ms, generate-params: 1320ms, application-code: 425ms)
  GET /en 200 in 172ms (next.js: 31ms, proxy.ts: 8ms, generate-params: 20ms, application-code: 133ms)
+ GET /en 200 in 786ms (next.js: 232ms, proxy.ts: 105ms, generate-params: 175ms, application-code: 449ms)
