@@ -1,6 +1,7 @@
 import Image from "next/image";
+import DynamicCTA from "./DynamicCTA";
 
-export default function Hero({ dictionary }: { dictionary: any }) {
+export default function Hero({ dictionary, locale }: { dictionary: any, locale: string }) {
   return (
     <section className="hero-section">
       <div className="hero-logo-lockup">
@@ -17,6 +18,7 @@ export default function Hero({ dictionary }: { dictionary: any }) {
       <div className="hero-content">
         <h1 className="brutalist-h1">{dictionary.hero.h1}</h1>
         <p className="brutalist-subh1">{dictionary.hero.subH1}</p>
+        <DynamicCTA ctaText={dictionary.cta} locale={locale} isHero={true} />
       </div>
 
       <div className="hero-stats">
