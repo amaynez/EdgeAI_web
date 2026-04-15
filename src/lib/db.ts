@@ -47,6 +47,16 @@ export async function ensureLeadsTable(): Promise<void> {
       console.warn('Failed to add linkedin column to leads table, it may already exist:', err);
     }
   }
+
+  // Add processing_status column for async task tracking
+  try {
+    await pool.query(`ALTER TABLE leads ADD COLUMN processing_status TEXT`);
+  } catch (err: any) {
+    // Ignore if the column already exists
+    if (err.code !== '42701') {
+      console.warn('Failed to add processing_status column to leads table:', err);
+    }
+  }
 }
 
 export { pool };
