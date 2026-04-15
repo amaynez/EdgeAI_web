@@ -9,12 +9,14 @@
 
 ## 🚀 Features
 
-- **Premium Light-Mode UI** — Cool blue-grey palette derived directly from the Zero Leak AI logo. Built with vanilla CSS and no Tailwind dependency.
+- **Premium Light-Mode UI** — Cool blue-grey palette derived directly from the Zero Leak AI logo. Built with vanilla CSS and no Tailwind dependency. Hero typography and CTA placement are heavily optimized.
 - **Internationalization (i18n)** — Native bilingual support (EN/ES) using JSON localization files and a dynamic language switcher.
-- **AI Lead Qualification** — Integrates with Google Gemini (`@google/generative-ai`) to score incoming leads and generate draft email responses on-the-fly.
+- **AI Lead Qualification** — Integrates with Google Gemini (`@google/generative-ai`) to score incoming leads and generate draft email responses on-the-fly. Output undergoes custom server-side HTML sanitization for security.
+- **Apollo.io Lead Enrichment** — Enriches lead capture with deep professional data via the Apollo.io API.
+- **Asynchronous Background Processing** — Hand-off of time-consuming AI tasks via Vercel `waitUntil`, ensuring instant UI feedback for users.
+- **Enhanced Identity Verification** — Strict LinkedIn profile validation required for any leads providing generic email domains (Gmail, Yahoo, etc.).
+- **Serverless Database** — All leads are saved securely to a Neon Postgres database (`@neondatabase/serverless`).
 - **Secure Leads Dashboard** — A protected `/leads` route using `next-auth` (Google OAuth) for reviewing captured leads, urgency timers, and AI scores.
-- **Local Data Storage** — Leads saved to `data/leads.json` for simplicity; no database required.
-- **Interactive Audit Form** — Multi-step modal form with success/error feedback.
 
 ---
 
@@ -70,11 +72,13 @@ The entire UI palette is derived from the **Zero Leak AI logo** (`/public/logo-z
 
 | Layer | Technology |
 |---|---|
-| Framework | [Next.js](https://nextjs.org) (App Router) |
+| Framework | [Next.js](https://nextjs.org) (App Router) (+ Vercel Functions) |
 | Styling | Vanilla CSS (`globals.css`) |
 | Typography | [Inter](https://fonts.google.com/specimen/Inter) (Google Fonts) |
+| Database | Neon Postgres (`@neondatabase/serverless`) |
 | Authentication | `next-auth` (Google OAuth Provider) |
 | AI Integration | Google Gemini (`@google/generative-ai`) |
+| Enrichment | Apollo.io API |
 | Email (Optional) | `nodemailer` |
 | Hosting | [Vercel](https://vercel.com) |
 | DNS / CDN | [Cloudflare](https://cloudflare.com) |
@@ -101,8 +105,14 @@ npm install
 Create a `.env.local` file in the root of your project:
 
 ```env
+# Database (Neon Postgres)
+DATABASE_URL="postgresql://user:password@endpoint.neon.tech/neondb?sslmode=require"
+
 # Google Gemini API
 GEMINI_API_KEY="your_gemini_api_key"
+
+# Apollo.io API (Lead Enrichment)
+APOLLO_API_KEY="your_apollo_api_key"
 
 # Google OAuth (NextAuth) for the /leads dashboard
 GOOGLE_CLIENT_ID="your_google_client_id"
