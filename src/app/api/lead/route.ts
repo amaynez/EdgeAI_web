@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { waitUntil } from '@vercel/functions';
 import nodemailer from 'nodemailer';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { pool, ensureLeadsTable } from '@/lib/db';
@@ -169,119 +170,105 @@ function validateLeadPayload(data: Record<string, unknown>): string[] {
   return errors;
 }
 
-export async function POST(request: Request) {
+async function processLeadBackground(leadId: string, leadData: any) {
+  const { name, email, company, role, q1, q2, q3, linkedin } = leadData;
+  let aiInsights = {
+    urgencyScore: 0,
+    potentialScore: 0,
+    analysis: 'AI Analysis Failed or Unavailable.',
+    draftEmail: 'Failed to generate draft email.',
+  };
+  let processingStatus = 'completed';
+
   try {
-    // --- Rate limiting ---
-    const clientIp = getClientIp(request);
-    if (isRateLimited(clientIp)) {
-      return NextResponse.json(
-        { error: 'Too many requests. Please try again later.' },
-        { status: 429 }
-      );
+    // --- 1. Apollo.io Enrichment ---
+    let apolloDataStr = '';
+    const apolloApiKey = process.env.APOLLO_API_KEY;
+
+    if (apolloApiKey) {
+      try {
+        const apolloRes = await fetch('https://api.apollo.io/v1/people/match', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Cache-Control': 'no-cache'
+          },
+          body: JSON.stringify({
+            api_key: apolloApiKey,
+            email: email,
+            linkedin_url: linkedin || undefined
+          })
+        });
+
+        if (apolloRes.ok) {
+          const apolloJson = await apolloRes.json();
+          const person = apolloJson.person || {};
+          const org = person.organization || {};
+
+          const compressedData = {
+            title: person.title,
+            seniority: person.seniority,
+            primary_phone: person.primary_phone,
+            estimated_num_employees: org.estimated_num_employees,
+            industry: org.industry,
+            technology_names: org.technology_names?.slice(0, 10) // Limit to top 10 to save tokens
+          };
+
+          apolloDataStr = `\nApollo.io Enrichment Data (for context):\n${JSON.stringify(compressedData, null, 2)}`;
+        } else {
+          console.warn('Apollo API error:', await apolloRes.text());
+        }
+      } catch (err) {
+        console.error('Error fetching from Apollo:', err);
+      }
     }
 
-    // --- Parse & validate payload ---
-    let data: Record<string, unknown>;
-    try {
-      data = await request.json();
-    } catch {
-      return NextResponse.json({ error: 'Invalid JSON body.' }, { status: 400 });
-    }
-
-    const validationErrors = validateLeadPayload(data);
-    if (validationErrors.length > 0) {
-      return NextResponse.json(
-        { error: 'Validation failed.', details: validationErrors },
-        { status: 400 }
-      );
-    }
-
-    // Safe to destructure after validation
-    const { name, email, company, role, q1, q2, q3, linkedin } = data as {
-      name: string; email: string; company: string; role: string;
-      q1?: Q1Value; q2?: Q2Value; q3?: Q3Value; linkedin?: string;
-    };
-
-    // --- 1. AI Qualification using Gemini ---
-    let aiInsights = {
-      urgencyScore: 0,
-      potentialScore: 0,
-      analysis: 'AI Analysis Failed or Unavailable.',
-      draftEmail: 'Failed to generate draft email.',
-    };
-
-    try {
-      if (process.env.GEMINI_API_KEY) {
-        const model = genAI.getGenerativeModel({
-          model: 'gemini-flash-lite-latest',
-          systemInstruction: `You are an expert B2B AI Consultant evaluator. Analyze this inbound lead for your consulting business. You must return ONLY a raw valid JSON object with the following schema, and no other text:
+    // --- 2. AI Qualification using Gemini ---
+    if (process.env.GEMINI_API_KEY) {
+      const model = genAI.getGenerativeModel({
+        model: 'gemini-flash-lite-latest',
+        systemInstruction: `You are an expert B2B AI Consultant evaluator. Analyze this inbound lead for your consulting business. You must return ONLY a raw valid JSON object with the following schema, and no other text:
 {
-  "urgencyScore": (number 1-10, based on how urgently they need AI security/auditing based on answers),
-  "potentialScore": (number 1-10, based on their role and company size potential),
+  "urgencyScore": (number 1-10, based on how urgently they need AI security/auditing based on answers and company context),
+  "potentialScore": (number 1-10, based on their role, company size potential, and tech stack),
   "analysis": "1-2 sentence concise analysis of their vulnerability and why they are a good lead",
   "draftEmail": "A professional HTML-formatted reply draft to the lead addressing their specific pain points, proposing a brief introductory chat. Emphasize how you can help them specifically based on their answers. Sign it as 'Armando Maynez, B2B AI Consultant'."
 }`
-        });
+      });
 
-        const prompt = `
+      const prompt = `
 Lead Profile:
 - Name: ${name}
 - Role: ${role}
 - Company: ${company}
 ${linkedin ? `- LinkedIn: ${linkedin}` : ''}
+${apolloDataStr}
 
 Assessment Answers:
 1. AI tools accessed (last 30 days)? ${q1}
 2. Operational data containing PII/IP? ${q2}
 3. Data exposed via cloud AI breach? ${q3}
-        `;
+      `;
 
-        const result = await model.generateContent(prompt);
-        const responseText = result.response.text().replace(/```json/gi, '').replace(/```/g, '').trim();
-        
-        try {
-          const parsed = JSON.parse(responseText);
-          // Explicitly extract only the expected fields so that unexpected
-          // properties in the AI response cannot pollute aiInsights (no spread).
-          // Coerce numeric scores to numbers with safe defaults.
-          aiInsights = {
-            urgencyScore:  Number.isFinite(Number(parsed.urgencyScore))  ? Number(parsed.urgencyScore)  : 0,
-            potentialScore: Number.isFinite(Number(parsed.potentialScore)) ? Number(parsed.potentialScore) : 0,
-            analysis:  typeof parsed.analysis === 'string'  ? parsed.analysis  : 'AI Analysis Failed or Unavailable.',
-            // Sanitize the AI-generated HTML email draft before persisting.
-            draftEmail: sanitizeHtml(parsed.draftEmail ?? ''),
-          };
-        } catch (e) {
-          console.error('Failed to parse Gemini output as JSON:', responseText);
-        }
-      } else {
-        console.warn('GEMINI_API_KEY missing, skipping AI insights');
+      const result = await model.generateContent(prompt);
+      const responseText = result.response.text().replace(/```json/gi, '').replace(/```/g, '').trim();
+
+      try {
+        const parsed = JSON.parse(responseText);
+        aiInsights = {
+          urgencyScore:  Number.isFinite(Number(parsed.urgencyScore))  ? Number(parsed.urgencyScore)  : 0,
+          potentialScore: Number.isFinite(Number(parsed.potentialScore)) ? Number(parsed.potentialScore) : 0,
+          analysis:  typeof parsed.analysis === 'string'  ? parsed.analysis  : 'AI Analysis Failed or Unavailable.',
+          draftEmail: sanitizeHtml(parsed.draftEmail ?? ''),
+        };
+      } catch (e) {
+        console.error('Failed to parse Gemini output as JSON:', responseText);
+        processingStatus = 'error: failed to parse Gemini output';
       }
-    } catch (aiError) {
-      console.error('Error during Gemini API call:', aiError);
+    } else {
+      console.warn('GEMINI_API_KEY missing, skipping AI insights');
+      processingStatus = 'error: missing GEMINI_API_KEY';
     }
-  
-    // --- 2. Persist to Neon Postgres (atomic single INSERT — no race condition) ---
-    await ensureTableOnce();
-
-    const normalizedLinkedin = linkedin?.trim() === '' ? null : linkedin;
-
-    await pool.query(
-      `INSERT INTO leads (id, name, email, company, role, q1, q2, q3, qualification, linkedin)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
-      [
-        crypto.randomUUID(),
-        name,
-        email,
-        company,
-        role,
-        q1 ?? null,
-        q2 ?? null,
-        q3 ?? null,
-        JSON.stringify(aiInsights),
-        normalizedLinkedin,
-      ]
-    );
 
     // --- 3. Send via Email (Gmail SMTP) ---
     const user = process.env.GMAIL_USER;
@@ -299,7 +286,7 @@ Assessment Answers:
       const mailOptions = {
         from: user,
         to: user, // Send to yourself
-        replyTo: email, // This allows you to just hit "Reply" and send the draft to them.
+        replyTo: email,
         subject: `[Lead: ${aiInsights.potentialScore}/10] AI Audit Request: ${escapeHtml(company)}`,
         html: `
           <div style="font-family: sans-serif; max-width: 600px; margin: auto; padding: 20px; color: #333; line-height: 1.6;">
@@ -344,8 +331,84 @@ Assessment Answers:
     } else {
       console.warn('GMAIL_USER or GMAIL_APP_PASSWORD missing. Skipping email.');
     }
+  } catch (globalErr: any) {
+    console.error('Error in background processing:', globalErr);
+    processingStatus = `error: ${globalErr.message}`;
+  } finally {
+    // --- 4. Update Database ---
+    try {
+      await pool.query(
+        `UPDATE leads SET qualification = $1, processing_status = $2 WHERE id = $3`,
+        [JSON.stringify(aiInsights), processingStatus, leadId]
+      );
+    } catch (dbErr) {
+      console.error('Failed to update lead with AI insights:', dbErr);
+    }
+  }
+}
 
-    return NextResponse.json({ success: true, message: 'Email sent & saved successfully' }, { status: 200 });
+export async function POST(request: Request) {
+  try {
+    // --- Rate limiting ---
+    const clientIp = getClientIp(request);
+    if (isRateLimited(clientIp)) {
+      return NextResponse.json(
+        { error: 'Too many requests. Please try again later.' },
+        { status: 429 }
+      );
+    }
+
+    // --- Parse & validate payload ---
+    let data: Record<string, unknown>;
+    try {
+      data = await request.json();
+    } catch {
+      return NextResponse.json({ error: 'Invalid JSON body.' }, { status: 400 });
+    }
+
+    const validationErrors = validateLeadPayload(data);
+    if (validationErrors.length > 0) {
+      return NextResponse.json(
+        { error: 'Validation failed.', details: validationErrors },
+        { status: 400 }
+      );
+    }
+
+    // Safe to destructure after validation
+    const { name, email, company, role, q1, q2, q3, linkedin } = data as {
+      name: string; email: string; company: string; role: string;
+      q1?: Q1Value; q2?: Q2Value; q3?: Q3Value; linkedin?: string;
+    };
+
+    // --- 1. Persist to Neon Postgres immediately ---
+    await ensureTableOnce();
+
+    const leadId = crypto.randomUUID();
+    const normalizedLinkedin = linkedin?.trim() === '' ? null : linkedin;
+
+    await pool.query(
+      `INSERT INTO leads (id, name, email, company, role, q1, q2, q3, linkedin, processing_status)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
+      [
+        leadId,
+        name,
+        email,
+        company,
+        role,
+        q1 ?? null,
+        q2 ?? null,
+        q3 ?? null,
+        normalizedLinkedin,
+        'pending'
+      ]
+    );
+
+    // --- 2. Hand off time-consuming tasks to waitUntil ---
+    const leadData = { name, email, company, role, q1, q2, q3, linkedin: normalizedLinkedin };
+    waitUntil(processLeadBackground(leadId, leadData));
+
+    // Return immediate success
+    return NextResponse.json({ success: true, message: 'Lead captured successfully and processing in background' }, { status: 200 });
   } catch (error: any) {
     console.error('API /lead error:', error);
     return NextResponse.json({ error: 'Failed to process lead request' }, { status: 500 });

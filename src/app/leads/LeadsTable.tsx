@@ -129,7 +129,13 @@ export default function LeadsTable({ initialLeads }: { initialLeads: any[] }) {
               
               <div className="lead-analysis">
                 <strong>AI Analysis:</strong>
-                {lead.qualification?.analysis}
+                {lead.processing_status === 'pending' ? (
+                  <span style={{ color: 'var(--text-muted)' }}>⏳ AI Processing in background...</span>
+                ) : lead.processing_status?.startsWith('error') ? (
+                  <span style={{ color: '#dc2626' }}>❌ {lead.processing_status}</span>
+                ) : (
+                  lead.qualification?.analysis || 'AI Analysis Failed or Unavailable.'
+                )}
               </div>
 
               <div className="lead-q-section">
@@ -167,6 +173,8 @@ export default function LeadsTable({ initialLeads }: { initialLeads: any[] }) {
                 <button 
                   className={`copy-btn ${copiedId === lead.id ? 'copied' : ''}`} 
                   onClick={() => handleCopy(lead.id, lead.qualification?.draftEmail)}
+                  disabled={lead.processing_status === 'pending' || !lead.qualification?.draftEmail}
+                  style={{ opacity: (lead.processing_status === 'pending' || !lead.qualification?.draftEmail) ? 0.5 : 1 }}
                 >
                   {copiedId === lead.id ? (
                     <>
@@ -181,7 +189,13 @@ export default function LeadsTable({ initialLeads }: { initialLeads: any[] }) {
                   )}
                 </button>
               </div>
-              <div className="email-content" dangerouslySetInnerHTML={{ __html: lead.qualification?.draftEmail || 'No draft generated.' }} />
+              <div className="email-content" dangerouslySetInnerHTML={{
+                __html: lead.processing_status === 'pending'
+                  ? '⏳ <em>Draft email is being generated...</em>'
+                  : lead.processing_status?.startsWith('error')
+                    ? `<span style="color: #dc2626;">Error generating email: ${lead.processing_status}</span>`
+                    : lead.qualification?.draftEmail || 'No draft generated.'
+              }} />
             </div>
           </div>
         );
