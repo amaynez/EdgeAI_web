@@ -9,25 +9,31 @@ export async function GET(request: Request) {
   // Vercel Cron automatically sends a Bearer token in the Authorization header
   const authHeader = request.headers.get('authorization');
 
-  // Note: For local testing, we might want to bypass this or provide a fallback.
-  // In a real application, verify CRON_SECRET matches exactly.
-  if (process.env.CRON_SECRET) {
-      if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
-          return new NextResponse('Unauthorized', { status: 401 });
-      }
+  if (!process.env.CRON_SECRET) {
+      return new NextResponse('Server misconfiguration: CRON_SECRET not set', { status: 500 });
+  }
+
+  if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+      return new NextResponse('Unauthorized', { status: 401 });
   }
 
   try {
-    // Find leads that are either pending for a long time or have error statuses
-    // Exclude 'completed' status
+    // Atomically find and claim leads that need processing
     const { rows } = await pool.query(
-      `SELECT * FROM leads
-       WHERE processing_status != 'completed'
-       AND (
-         processing_status LIKE 'error:%'
-         OR (processing_status = 'pending' AND timestamp < NOW() - INTERVAL '5 minutes')
+      `UPDATE leads
+       SET processing_status = 'pending'
+       WHERE id IN (
+           SELECT id FROM leads
+           WHERE processing_status != 'completed'
+           AND processing_status != 'pending'
+           AND (
+             processing_status LIKE 'error:%'
+             OR (processing_status = 'pending' AND timestamp < NOW() - INTERVAL '5 minutes')
+           )
+           LIMIT 5
+           FOR UPDATE SKIP LOCKED
        )
-       LIMIT 5` // Limit batch size to prevent hitting execution limits
+       RETURNING *`
     );
 
     if (rows.length === 0) {
@@ -46,12 +52,6 @@ export async function GET(request: Request) {
         q3: row.q3,
         linkedin: row.linkedin,
       };
-
-      // Set to pending while processing to avoid concurrent pick-ups
-      await pool.query(
-         `UPDATE leads SET processing_status = 'pending' WHERE id = $1`,
-         [row.id]
-      );
 
       // We await it here so the cron job runs them. Note: Vercel functions have timeouts,
       // so if the array is large we might exceed the limit. We used LIMIT 5 above to help.

@@ -34,7 +34,8 @@ export async function ensureLeadsTable(): Promise<void> {
       q3            TEXT,
       contacted     BOOLEAN     NOT NULL DEFAULT FALSE,
       qualification JSONB,
-      linkedin      TEXT
+      linkedin      TEXT,
+      apollo_data   JSONB
     )
   `);
 

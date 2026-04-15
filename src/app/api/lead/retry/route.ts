@@ -33,11 +33,17 @@ export async function POST(request: Request) {
       linkedin: row.linkedin,
     };
 
-    // Update state to pending to provide immediate UI feedback
-    await pool.query(
-       `UPDATE leads SET processing_status = 'pending' WHERE id = $1`,
+    // Update state to pending to provide immediate UI feedback atomically
+    const updateRes = await pool.query(
+       `UPDATE leads SET processing_status = 'pending'
+        WHERE id = $1 AND processing_status != 'pending'
+        RETURNING id`,
        [leadId]
     );
+
+    if (updateRes.rowCount === 0) {
+        return NextResponse.json({ error: 'Lead is already being processed' }, { status: 409 });
+    }
 
     waitUntil(processLeadBackground(leadId, leadData));
 

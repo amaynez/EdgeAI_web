@@ -40,17 +40,24 @@ export async function processLeadBackground(leadId: string, leadData: LeadData) 
   try {
     // --- 0. Check if existing apollo_data exists (e.g. from a prior run) ---
     let existingApolloDataStr = null;
+    let emailAlreadySent = false;
     try {
-      const { rows } = await pool.query(`SELECT apollo_data FROM leads WHERE id = $1`, [leadId]);
-      if (rows.length > 0 && rows[0].apollo_data && rows[0].apollo_data.raw_data) {
-        // Build the string from the saved data to avoid recalling Apollo
-        const data = rows[0].apollo_data.compressed_data;
-        if (data) {
-          existingApolloDataStr = `\nApollo.io Enrichment Data (for context):\n${JSON.stringify(data, null, 2)}`;
+      const { rows } = await pool.query(`SELECT apollo_data, email_sent_at, contacted FROM leads WHERE id = $1`, [leadId]);
+      if (rows.length > 0) {
+        if (rows[0].email_sent_at || rows[0].contacted) {
+            emailAlreadySent = true;
+        }
+
+        if (rows[0].apollo_data && rows[0].apollo_data.raw_data) {
+          // Build the string from the saved data to avoid recalling Apollo
+          const data = rows[0].apollo_data.compressed_data;
+          if (data) {
+            existingApolloDataStr = `\nApollo.io Enrichment Data (for context):\n${JSON.stringify(data, null, 2)}`;
+          }
         }
       }
     } catch (err: any) {
-      console.error('Error fetching existing apollo data:', err);
+      console.error('Error fetching existing lead data:', err);
     }
 
     // --- 1. Apollo.io Enrichment ---
@@ -188,7 +195,8 @@ Assessment Answers:
 
     // --- 3. Send via Email (Gmail SMTP) ---
     // Only send email if we have draftEmail, indicating Gemini succeeded
-    if (!geminiFailed) {
+    let emailSentSuccessfully = false;
+    if (!geminiFailed && !emailAlreadySent) {
       const user = process.env.GMAIL_USER;
       const pass = process.env.GMAIL_APP_PASSWORD;
 
@@ -246,6 +254,7 @@ Assessment Answers:
         };
 
         await transporter.sendMail(mailOptions);
+        emailSentSuccessfully = true;
       } else {
         console.warn('GMAIL_USER or GMAIL_APP_PASSWORD missing. Skipping email.');
       }
@@ -259,12 +268,12 @@ Assessment Answers:
       try {
         if (apolloRawData && apolloCompressedData && !existingApolloDataStr) {
            await pool.query(
-             `UPDATE leads SET qualification = $1, processing_status = $2, apollo_data = $3 WHERE id = $4`,
+             `UPDATE leads SET qualification = $1, processing_status = $2, apollo_data = $3${emailSentSuccessfully ? ', email_sent_at = NOW()' : ''} WHERE id = $4`,
              [JSON.stringify(aiInsights), processingStatus, JSON.stringify({ raw_data: apolloRawData, compressed_data: apolloCompressedData }), leadId]
            );
         } else {
            await pool.query(
-             `UPDATE leads SET qualification = $1, processing_status = $2 WHERE id = $3`,
+             `UPDATE leads SET qualification = $1, processing_status = $2${emailSentSuccessfully ? ', email_sent_at = NOW()' : ''} WHERE id = $3`,
              [JSON.stringify(aiInsights), processingStatus, leadId]
            );
         }
