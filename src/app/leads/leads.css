@@ -285,3 +285,129 @@
   opacity: 1;
   transform: scale(1);
 }
+
+/* Apollo Enrichment Data Section */
+.apollo-data-container {
+  grid-column: 1 / -1;
+  margin-top: 0.5rem;
+  border-top: 1px solid var(--border-color);
+  padding-top: 1rem;
+}
+
+.apollo-toggle-btn {
+  background: none;
+  border: none;
+  color: var(--brand-navy);
+  font-weight: 600;
+  font-size: 0.9rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  padding: 0.4rem 0.6rem;
+  border-radius: var(--radius-sm);
+  transition: background-color 0.2s ease;
+  font-family: inherit;
+}
+
+.apollo-toggle-btn:hover {
+  background-color: var(--bg-subtle);
+}
+
+.apollo-toggle-btn svg {
+  width: 16px;
+  height: 16px;
+}
+
+.apollo-data-section {
+  margin-top: 1rem;
+  background: var(--bg-subtle);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius);
+  padding: 1.5rem;
+  animation: slide-down 0.3s ease-out;
+}
+
+@keyframes slide-down {
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.apollo-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.apollo-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.apollo-label {
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  font-weight: 700;
+  letter-spacing: 0.05em;
+}
+
+.apollo-value {
+  font-size: 1rem;
+  color: var(--text-primary);
+  font-weight: 500;
+}
+
+.apollo-badge {
+  display: inline-block;
+  padding: 0.25rem 0.6rem;
+  border-radius: 4px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  background-color: var(--bg-color);
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
+  align-self: flex-start;
+}
+
+.apollo-badge.seniority-badge {
+  background-color: rgba(26, 35, 126, 0.05); /* very light navy */
+  border-color: rgba(26, 35, 126, 0.2);
+  color: var(--brand-navy);
+}
+
+.apollo-badge.size-badge {
+  background-color: rgba(22, 163, 74, 0.05); /* very light green */
+  border-color: rgba(22, 163, 74, 0.2);
+  color: #16a34a;
+}
+
+.apollo-badge.industry-badge {
+  background-color: rgba(245, 158, 11, 0.05); /* very light orange */
+  border-color: rgba(245, 158, 11, 0.2);
+  color: #d97706;
+}
+
+.apollo-tech-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--border-color);
+}
+
+.tech-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.apollo-badge.tech-badge {
+  background-color: white;
+  font-size: 0.8rem;
+  border-radius: 99px;
+  padding: 0.3rem 0.8rem;
+  box-shadow: var(--shadow-sm);
+}
