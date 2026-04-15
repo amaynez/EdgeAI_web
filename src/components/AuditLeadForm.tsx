@@ -129,6 +129,9 @@ export default function AuditLeadForm({ locale, onClose, onSuccess, onError }: A
     if (validateStep1()) {
       const emailDomain = formData.email.split('@')[1]?.toLowerCase();
       if (emailDomain && GENERIC_DOMAINS.includes(emailDomain)) {
+        if (!formData.linkedin) {
+          setFormData({ ...formData, linkedin: 'https://www.linkedin.com/in/' });
+        }
         setStep(3);
       } else {
         setStep(2);
