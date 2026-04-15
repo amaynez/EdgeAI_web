@@ -1,14 +1,15 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
-import { toggleContacted } from './actions';
+import React, { useState, useEffect, useRef } from 'react';
+import { toggleContacted, fetchLeads } from './actions';
 
 export default function LeadsTable({ initialLeads }: { initialLeads: any[] }) {
   const [leads, setLeads] = useState(initialLeads);
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [now, setNow] = useState(Date.now());
   // Track in-flight toggle calls to prevent concurrent updates for the same lead.
-  const pendingToggles = React.useRef<Set<string>>(new Set());
+  const pendingToggles = useRef<Set<string>>(new Set());
+  const isPolling = useRef(false);
 
   useEffect(() => {
     // Ticking timer: update "now" every minute
@@ -17,6 +18,29 @@ export default function LeadsTable({ initialLeads }: { initialLeads: any[] }) {
     }, 60000); // Only need minute-level precision
     return () => clearInterval(interval);
   }, []);
+
+  useEffect(() => {
+    // Poll for updates if any lead is 'pending'
+    const hasPending = leads.some(l => l.processing_status === 'pending');
+    if (!hasPending) return;
+
+    const pollInterval = setInterval(async () => {
+      if (isPolling.current) return;
+      isPolling.current = true;
+      try {
+        const result = await fetchLeads();
+        if (result.success && result.leads) {
+          setLeads(result.leads);
+        }
+      } catch (err) {
+        console.error('Failed to poll leads:', err);
+      } finally {
+        isPolling.current = false;
+      }
+    }, 5000); // Poll every 5 seconds
+
+    return () => clearInterval(pollInterval);
+  }, [leads]);
 
   const handleCopy = async (id: string, draftEmailHTML: string) => {
     try {
@@ -189,13 +213,17 @@ export default function LeadsTable({ initialLeads }: { initialLeads: any[] }) {
                   )}
                 </button>
               </div>
-              <div className="email-content" dangerouslySetInnerHTML={{
-                __html: lead.processing_status === 'pending'
-                  ? '⏳ <em>Draft email is being generated...</em>'
-                  : lead.processing_status?.startsWith('error')
-                    ? `<span style="color: #dc2626;">Error generating email: ${lead.processing_status}</span>`
-                    : lead.qualification?.draftEmail || 'No draft generated.'
-              }} />
+              <div className="email-content">
+                {lead.processing_status === 'pending' ? (
+                  <>⏳ <em>Draft email is being generated...</em></>
+                ) : lead.processing_status?.startsWith('error') ? (
+                  <span style={{ color: '#dc2626' }}>Error generating email: {lead.processing_status}</span>
+                ) : lead.qualification?.draftEmail ? (
+                  <div dangerouslySetInnerHTML={{ __html: lead.qualification.draftEmail }} />
+                ) : (
+                  'No draft generated.'
+                )}
+              </div>
             </div>
           </div>
         );

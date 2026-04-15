@@ -170,7 +170,18 @@ function validateLeadPayload(data: Record<string, unknown>): string[] {
   return errors;
 }
 
-async function processLeadBackground(leadId: string, leadData: any) {
+interface LeadData {
+  name: string;
+  email: string;
+  company: string;
+  role: string;
+  q1?: Q1Value | null;
+  q2?: Q2Value | null;
+  q3?: Q3Value | null;
+  linkedin?: string | null;
+}
+
+async function processLeadBackground(leadId: string, leadData: LeadData) {
   const { name, email, company, role, q1, q2, q3, linkedin } = leadData;
   let aiInsights = {
     urgencyScore: 0,
@@ -187,6 +198,9 @@ async function processLeadBackground(leadId: string, leadData: any) {
 
     if (apolloApiKey) {
       try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 seconds timeout
+
         const apolloRes = await fetch('https://api.apollo.io/v1/people/match', {
           method: 'POST',
           headers: {
@@ -197,8 +211,11 @@ async function processLeadBackground(leadId: string, leadData: any) {
             api_key: apolloApiKey,
             email: email,
             linkedin_url: linkedin || undefined
-          })
+          }),
+          signal: controller.signal
         });
+
+        clearTimeout(timeoutId);
 
         if (apolloRes.ok) {
           const apolloJson = await apolloRes.json();
@@ -218,8 +235,12 @@ async function processLeadBackground(leadId: string, leadData: any) {
         } else {
           console.warn('Apollo API error:', await apolloRes.text());
         }
-      } catch (err) {
-        console.error('Error fetching from Apollo:', err);
+      } catch (err: any) {
+        if (err.name === 'AbortError') {
+          console.warn('Apollo API timeout exceeded');
+        } else {
+          console.error('Error fetching from Apollo:', err);
+        }
       }
     }
 
@@ -335,14 +356,28 @@ Assessment Answers:
     console.error('Error in background processing:', globalErr);
     processingStatus = `error: ${globalErr.message}`;
   } finally {
-    // --- 4. Update Database ---
-    try {
-      await pool.query(
-        `UPDATE leads SET qualification = $1, processing_status = $2 WHERE id = $3`,
-        [JSON.stringify(aiInsights), processingStatus, leadId]
-      );
-    } catch (dbErr) {
-      console.error('Failed to update lead with AI insights:', dbErr);
+    // --- 4. Update Database with Retry Logic ---
+    let retries = 3;
+    let delay = 1000;
+
+    while (retries > 0) {
+      try {
+        await pool.query(
+          `UPDATE leads SET qualification = $1, processing_status = $2 WHERE id = $3`,
+          [JSON.stringify(aiInsights), processingStatus, leadId]
+        );
+        break; // Success
+      } catch (dbErr) {
+        console.error(`Failed to update lead (Attempt ${4 - retries}/3):`, dbErr);
+        retries -= 1;
+        if (retries === 0) {
+          console.error(`FATAL: Could not persist AI insights for lead ${leadId} after 3 attempts. Payload:`, { aiInsights, processingStatus });
+          // In a production system, you would enqueue this to a dead-letter queue or persistent store here.
+        } else {
+          await new Promise(res => setTimeout(res, delay));
+          delay *= 2; // Exponential backoff
+        }
+      }
     }
   }
 }
