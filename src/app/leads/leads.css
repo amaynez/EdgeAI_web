@@ -325,10 +325,10 @@
   border: 1px solid var(--border-color);
   border-radius: var(--radius);
   padding: 1.5rem;
-  animation: slideDown 0.3s ease-out;
+  animation: slide-down 0.3s ease-out;
 }
 
-@keyframes slideDown {
+@keyframes slide-down {
   from { opacity: 0; transform: translateY(-10px); }
   to { opacity: 1; transform: translateY(0); }
 }
@@ -372,19 +372,19 @@
   align-self: flex-start;
 }
 
-.badge.seniority.apollo-badge {
+.apollo-badge.seniority-badge {
   background-color: rgba(26, 35, 126, 0.05); /* very light navy */
   border-color: rgba(26, 35, 126, 0.2);
   color: var(--brand-navy);
 }
 
-.badge.size.apollo-badge {
+.apollo-badge.size-badge {
   background-color: rgba(22, 163, 74, 0.05); /* very light green */
   border-color: rgba(22, 163, 74, 0.2);
   color: #16a34a;
 }
 
-.badge.industry.apollo-badge {
+.apollo-badge.industry-badge {
   background-color: rgba(245, 158, 11, 0.05); /* very light orange */
   border-color: rgba(245, 158, 11, 0.2);
   color: #d97706;
@@ -404,7 +404,7 @@
   gap: 0.5rem;
 }
 
-.tech.apollo-badge {
+.apollo-badge.tech-badge {
   background-color: white;
   font-size: 0.8rem;
   border-radius: 99px;

@@ -244,6 +244,8 @@ export default function LeadsTable({ initialLeads }: { initialLeads: any[] }) {
                 <button
                   className="apollo-toggle-btn"
                   onClick={() => toggleApolloData(lead.id)}
+                  aria-expanded={isExpanded}
+                  aria-controls={`apollo-data-section-${lead.id}`}
                 >
                   {isExpanded ? (
                     <><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="18 15 12 9 6 15"></polyline></svg> Hide Enrichment Data</>
@@ -253,7 +255,7 @@ export default function LeadsTable({ initialLeads }: { initialLeads: any[] }) {
                 </button>
 
                 {isExpanded && apolloData && (
-                  <div className="apollo-data-section">
+                  <div className="apollo-data-section" id={`apollo-data-section-${lead.id}`}>
                     <div className="apollo-grid">
                       <div className="apollo-field">
                         <span className="apollo-label">Title:</span>
@@ -261,7 +263,7 @@ export default function LeadsTable({ initialLeads }: { initialLeads: any[] }) {
                       </div>
                       <div className="apollo-field">
                         <span className="apollo-label">Seniority:</span>
-                        <span className="apollo-value badge seniority-badge">{apolloData.seniority || 'N/A'}</span>
+                        <span className="apollo-value apollo-badge seniority-badge">{apolloData.seniority || 'N/A'}</span>
                       </div>
                       <div className="apollo-field">
                         <span className="apollo-label">Phone:</span>
@@ -269,11 +271,11 @@ export default function LeadsTable({ initialLeads }: { initialLeads: any[] }) {
                       </div>
                       <div className="apollo-field">
                         <span className="apollo-label">Employees:</span>
-                        <span className="apollo-value badge size-badge">{apolloData.estimated_num_employees || 'N/A'}</span>
+                        <span className="apollo-value apollo-badge size-badge">{apolloData.estimated_num_employees || 'N/A'}</span>
                       </div>
                       <div className="apollo-field">
                         <span className="apollo-label">Industry:</span>
-                        <span className="apollo-value badge industry-badge">{apolloData.industry || 'N/A'}</span>
+                        <span className="apollo-value apollo-badge industry-badge">{apolloData.industry || 'N/A'}</span>
                       </div>
                     </div>
 
