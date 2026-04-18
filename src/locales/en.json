@@ -1,19 +1,89 @@
 {
-  "siteTitle": "Zero Leak AI",
-  "hero": {
-    "h1": "INTELLIGENCE IS ALREADY INSIDE YOUR COMPANY.\nTHE ONLY QUESTION IS WHETHER YOU STILL CONTROL IT.",
-    "subH1": "Real automation, inside your network.\nZero data leakage.\nLFPDPPP compliance by design—not by policy.",
-    "stat1": "On-Premises",
-    "stat2": "Data Leaks",
-    "stat3": "Compliant by Design"
+  "siteTitle": "Zero Leak",
+  "nav": {
+    "insights": "Insights",
+    "partnerStrategy": "Partner Strategy",
+    "consultPartner": "Consult Partner"
   },
-  "cta": "Get Started",
+  "hero": {
+    "badge": "Executive Strategy",
+    "h1": "Recover the Margin You're Bleeding to the Algorithm.",
+    "desc": "We help retail brands selling to Amazon and Walmart recover 10\u201315% of lost margin through diagnostic audits and strategic recovery.",
+    "cta": "Book a Strategic Audit",
+    "caseStudies": "View Case Studies",
+    "recoveryPotential": "Recovery Potential",
+    "recoveryValue": "+15.4%",
+    "leakDetected": "Leak Detected",
+    "leakValue": "Net PPM Erosion"
+  },
   "problem": {
-    "title": "THIS IS NOT HYPOTHETICAL: IT’S SHADOW AI",
-    "description": "Your teams are already using public AI to move faster.\nContracts. Client data. Strategy.\n\nNo bad intent.\nJust pressure to deliver.\n\nBut every prompt leaving your network is direct exposure.\nNo control. No traceability.\n\nAnd in many cases, outside LFPDPPP compliance.\n\nThis isn’t a future risk.\nIt’s an active breach."
+    "title": "The Algorithm Is Not Your Partner.",
+    "desc": "Retail algorithms like Amazon\u2019s Net PPM are designed for one purpose: to extract maximum value from suppliers. Your margin isn't just disappearing\u2014it's being systematically engineered away through automated markdown allowances and invisible trade spend waste.",
+    "card1Title": "Markdown Allowance Leakage",
+    "card1Desc": "Our data indicates that over 40% of markdown allowances are miscalculated or applied to products with high organic velocity, effectively subsidizing growth you already owned.",
+    "card1Foot": "Document_2 analysis",
+    "card2Title": "Trade Spend Waste",
+    "card2Desc": "Systematic audits reveal that up to 22% of trade spend is lost to overlapping promotional windows and \"auto-matched\" pricing traps that trigger without human intervention.",
+    "card2Foot": "Document_4 findings",
+    "card3Title": "The Net PPM Trap",
+    "card3Desc": "Retailer pricing engines prioritize their bottom line, triggering automatic price drops that force vendors into retroactive profit-protection claims they rarely win.",
+    "card3Foot": "Strategic Exposure"
   },
   "solution": {
-    "title": "DON’T BLOCK AI.\nRELOCATE IT.",
-    "description": "Air-Gapped AI infrastructure, running 100% inside your network.\n\nModels operating locally on your devices and servers.\nNo internet. No third parties. No data leakage.\n\nNo cloud dependency.\nNo exported risk.\n\nCompliance, control, and sovereignty… by architecture."
+    "foundation": "Technological Foundation",
+    "h3": "IA Cero Fuga",
+    "h3Desc": "Proprietary air-gapped intelligence for high-stakes financial auditing.",
+    "h2": "Intelligence without Exposure.",
+    "desc": "Most diagnostic tools require you to upload sensitive ERP data to the cloud, creating massive corporate risk. **IA Cero Fuga** is different.",
+    "point1Title": "Air-Gapped Infrastructure",
+    "point1Desc": "The audit framework runs locally. Your data never leaves your environment.",
+    "point2Title": "Algorithmic Forensics",
+    "point2Desc": "Identifies patterns of margin extraction that human auditors consistently miss.",
+    "point3Title": "Verified Recovery Routes",
+    "point3Desc": "Outputs exact dispute documentation pre-formatted for Amazon and Walmart portals."
+  },
+  "expertise": {
+    "h2": "The 'God-View' Advantage.",
+    "desc": "Our founder spent 17 years at the intersection of supply chain and digital commerce. From executive leadership at PMI to serving as an Amazon Category Leader, they\u2019ve seen the retail machine from both sides.",
+    "stat1": "17yr",
+    "stat1Label": "Industry Tenure",
+    "stat2": "PMI",
+    "stat2Label": "Supply Chain Leadership",
+    "stat3": "Amazon",
+    "stat3Label": "Category Authority",
+    "quote": "\"In retail, what you don't measure is what the algorithm consumes. We give you back the visibility to defend your profit.\""
+  },
+  "consultation": {
+    "badge": "Strategic Engagement",
+    "h2": "Move Beyond Transactional Audits.",
+    "desc": "Plug margin leaks with executive-level oversight. We don't just find discrepancies; we engineer a long-term defense strategy for your retail partnerships. Partner with a former Amazon Category Leader to protect your bottom line.",
+    "cta": "Book a Strategic Audit",
+    "point1Title": "Bespoke Analysis",
+    "point1Desc": "Every engagement is tailored to your specific ERP architecture and retailer agreement nuances.",
+    "point2Title": "Lead-Score Intake",
+    "point2Desc": "Our diagnostic process begins with a comprehensive questionnaire to assess recovery potential before deployment.",
+    "point3Title": "Executive Partnership",
+    "point3Desc": "Direct access to industry authorities who understand the algorithm's incentives."
+  },
+  "proof": {
+    "h2": "The Proof of Precision.",
+    "desc": "While at Amazon, our leadership didn't just manage growth\u2014they engineered efficiency.",
+    "statVal": "4% YoY",
+    "statDesc": "Margin improvement engineered within Amazon's largest categories.",
+    "bar1Label": "Typical Brand Leakage",
+    "bar1Val": "12.5%",
+    "bar2Label": "Post-Audit Recovery",
+    "bar2Val": "Zero Leak"
+  },
+  "footer": {
+    "desc": "Precision consultancy for the algorithmic age. We plug the gaps that technology creates.",
+    "practice": "Practice",
+    "services": "Services",
+    "insights": "Insights",
+    "partnerStrategy": "Partner Strategy",
+    "legal": "Legal",
+    "privacy": "Privacy",
+    "contact": "Contact",
+    "copyright": "\u00a9 2024 Zero Leak. Executive Precision."
   }
 }

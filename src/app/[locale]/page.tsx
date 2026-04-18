@@ -16,7 +16,7 @@ export default async function Home({
     <div className="home-container">
       <Hero dictionary={dictionary} locale={locale} />
       <ProblemSolution dictionary={dictionary} />
-      <DynamicCTA ctaText={dictionary.cta} locale={locale} />
+      <DynamicCTA ctaText={dictionary.hero.cta} locale={locale} />
 
       <footer className="page-footer-logo">
         <Image

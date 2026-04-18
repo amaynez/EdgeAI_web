@@ -18,7 +18,7 @@ export default function Hero({ dictionary, locale }: { dictionary: any, locale: 
       <div className="hero-content">
         <h1 className="brutalist-h1">{dictionary.hero.h1}</h1>
         <p className="brutalist-subh1">{dictionary.hero.subH1}</p>
-        <DynamicCTA ctaText={dictionary.cta} locale={locale} isHero={true} />
+        <DynamicCTA ctaText={dictionary.hero.cta} locale={locale} isHero={true} />
       </div>
 
       <div className="hero-stats">
