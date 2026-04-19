@@ -3,7 +3,7 @@ export default function ProblemSolution({ dictionary }: { dictionary: any }) {
     <section className="problem-solution-section">
       <div className="section-block problem-block">
         <h2 className="brutalist-h2">{dictionary.problem.title}</h2>
-        <p className="brutalist-p">{dictionary.problem.description}</p>
+        <p className="brutalist-p">{dictionary.problem.desc}</p>
       </div>
 
       <div className="section-block separator-block">
@@ -11,8 +11,8 @@ export default function ProblemSolution({ dictionary }: { dictionary: any }) {
       </div>
 
       <div className="section-block solution-block">
-        <h2 className="brutalist-h2">{dictionary.solution.title}</h2>
-        <p className="brutalist-p">{dictionary.solution.description}</p>
+        <h2 className="brutalist-h2">{dictionary.solution.h2}</h2>
+        <p className="brutalist-p">{dictionary.solution.desc}</p>
       </div>
     </section>
   );

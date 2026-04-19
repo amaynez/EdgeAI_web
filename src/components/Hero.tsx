@@ -17,25 +17,21 @@ export default function Hero({ dictionary, locale }: { dictionary: any, locale: 
 
       <div className="hero-content">
         <h1 className="brutalist-h1">{dictionary.hero.h1}</h1>
-        <p className="brutalist-subh1">{dictionary.hero.subH1}</p>
+        <p className="brutalist-subh1">{dictionary.hero.desc ?? ''}</p>
         <DynamicCTA ctaText={dictionary.hero.cta} locale={locale} isHero={true} />
       </div>
 
       <div className="hero-stats">
         <div className="hero-stat">
-          <span className="hero-stat-number">100%</span>
-          <span className="hero-stat-label">{dictionary.hero.stat1 ?? 'On-Premises'}</span>
+          <span className="hero-stat-number">{dictionary.hero.recoveryValue ?? '+15.4%'}</span>
+          <span className="hero-stat-label">{dictionary.hero.recoveryPotential ?? 'Recovery Potential'}</span>
         </div>
         <div className="hero-stat-divider" />
         <div className="hero-stat">
-          <span className="hero-stat-number">0</span>
-          <span className="hero-stat-label">{dictionary.hero.stat2 ?? 'Data Leaks'}</span>
+          <span className="hero-stat-number">{dictionary.hero.leakValue ?? 'Net PPM Erosion'}</span>
+          <span className="hero-stat-label">{dictionary.hero.leakDetected ?? 'Leak Detected'}</span>
         </div>
-        <div className="hero-stat-divider" />
-        <div className="hero-stat">
-          <span className="hero-stat-number">LFPDPPP</span>
-          <span className="hero-stat-label">{dictionary.hero.stat3 ?? 'Compliant by Design'}</span>
-        </div>
+
       </div>
     </section>
   );
