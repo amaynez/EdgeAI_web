@@ -133,14 +133,14 @@ export default function Navigation({
           <div 
             id="mobile-menu" 
             ref={menuRef}
-            className=" bg-white w-full border-t border-slate-200 p-4 flex flex-col gap-4 absolute top-full left-0 shadow-lg"
+            className="mobile-menu"
           >
             <a href="#insights" className="nav-link" onClick={() => setMenuOpen(false)}>{nav.insights}</a>
             <a href="#consultation" className="nav-link" onClick={() => setMenuOpen(false)}>{nav.partnerStrategy}</a>
-            <div className="border-t border-slate-100 pt-4 flex flex-col gap-4">
+            <div className="mobile-menu-bottom">
               <LanguageSelector currentLocale={currentLocale} />
               <button
-                className="nav-cta-btn w-full text-center"
+                className="nav-cta-btn mobile-cta-btn"
                 onClick={() => { setFormOpen(true); setMenuOpen(false); }}
                 id="nav-cta-mobile"
               >
