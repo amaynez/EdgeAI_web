@@ -3,7 +3,7 @@ import { useState } from 'react';
 import Image from 'next/image';
 import AuditLeadForm from './AuditLeadForm';
 
-export default function Hero({ dictionary, locale }: { dictionary: any; locale: string }) {
+export default function Hero({ dictionary }: { dictionary: any }) {
   const [formOpen, setFormOpen] = useState(false);
   const h = dictionary.hero;
 
