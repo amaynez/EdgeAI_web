@@ -17,10 +17,40 @@ export default function Navigation({
 }) {
   const [formOpen, setFormOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [activeSection, setActiveSection] = useState<string | null>(null);
   const menuRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
 
   const toggleMenu = () => setMenuOpen(!menuOpen);
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            setActiveSection(entry.target.id);
+          } else {
+            // Only unset if the section losing intersection is the currently active one.
+            setActiveSection((prev) => (prev === entry.target.id ? null : prev));
+          }
+        });
+      },
+      {
+        rootMargin: '-50% 0px -50% 0px', // Trigger when section is in the middle of the viewport
+      }
+    );
+
+    const insightsSection = document.getElementById('insights');
+    const consultationSection = document.getElementById('consultation');
+
+    if (insightsSection) observer.observe(insightsSection);
+    if (consultationSection) observer.observe(consultationSection);
+
+    return () => {
+      if (insightsSection) observer.unobserve(insightsSection);
+      if (consultationSection) observer.unobserve(consultationSection);
+    };
+  }, []);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -64,8 +94,8 @@ export default function Navigation({
           <Link href={`/${currentLocale}`} className="nav-wordmark">{siteTitle}</Link>
 
           <div className="nav-links ">
-            <a href="#insights" className="nav-link">{nav.insights}</a>
-            <a href="#consultation" className="nav-link nav-link-active">{nav.partnerStrategy}</a>
+            <a href="#insights" className={`nav-link ${activeSection === 'insights' ? 'nav-link-active' : ''}`}>{nav.insights}</a>
+            <a href="#consultation" className={`nav-link ${activeSection === 'consultation' ? 'nav-link-active' : ''}`}>{nav.partnerStrategy}</a>
           </div>
 
           <div className="nav-right">
@@ -106,7 +136,7 @@ export default function Navigation({
             className=" bg-white w-full border-t border-slate-200 p-4 flex flex-col gap-4 absolute top-full left-0 shadow-lg"
           >
             <a href="#insights" className="nav-link" onClick={() => setMenuOpen(false)}>{nav.insights}</a>
-            <a href="#consultation" className="nav-link nav-link-active" onClick={() => setMenuOpen(false)}>{nav.partnerStrategy}</a>
+            <a href="#consultation" className="nav-link" onClick={() => setMenuOpen(false)}>{nav.partnerStrategy}</a>
             <div className="border-t border-slate-100 pt-4 flex flex-col gap-4">
               <LanguageSelector currentLocale={currentLocale} />
               <button
