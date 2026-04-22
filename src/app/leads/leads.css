@@ -44,8 +44,8 @@
 }
 
 .lead-card:hover {
-  border-color: var(--brand-navy);
-  box-shadow: 0 4px 20px var(--brand-navy-light);
+  border-color: var(--primary);
+  box-shadow: 0 4px 20px rgba(0,0,0,0.1);
 }
 
 .lead-card[data-contacted="true"]:hover {
@@ -263,12 +263,12 @@
 }
 
 .contacted-toggle input:checked + .custom-checkbox {
-  background-color: var(--accent);
-  border-color: var(--accent);
+  background-color: var(--primary);
+  border-color: var(--primary);
 }
 
 .contacted-toggle input:focus-visible + .custom-checkbox {
-  outline: 2px solid var(--accent);
+  outline: 2px solid var(--primary);
   outline-offset: 2px;
 }
 
@@ -297,7 +297,7 @@
 .apollo-toggle-btn {
   background: none;
   border: none;
-  color: var(--brand-navy);
+  color: var(--primary);
   font-weight: 600;
   font-size: 0.9rem;
   display: flex;
@@ -375,7 +375,7 @@
 .apollo-badge.seniority-badge {
   background-color: rgba(26, 35, 126, 0.05); /* very light navy */
   border-color: rgba(26, 35, 126, 0.2);
-  color: var(--brand-navy);
+  color: var(--primary);
 }
 
 .apollo-badge.size-badge {

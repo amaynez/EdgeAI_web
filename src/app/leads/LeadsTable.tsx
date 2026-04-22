@@ -178,15 +178,15 @@ export default function LeadsTable({ initialLeads }: { initialLeads: any[] }) {
 
               <div className="lead-q-section">
                 <div>
-                  <span className="lead-q">Q: Can you name every AI tool your employees accessed in the last 30 days?</span> 
+                  <span className="lead-q">Q: Which retailers do you currently sell to?</span> 
                   <span className="lead-a">{lead.q1}</span>
                 </div>
                 <div>
-                  <span className="lead-q">Q: What percentage of your operational data contains PII or highly confidential IP?</span> 
+                  <span className="lead-q">Q: Approximately what % of your P&L do you attribute to trade spend and allowances?</span> 
                   <span className="lead-a">{lead.q2}</span>
                 </div>
                 <div>
-                  <span className="lead-q">Q: If your tech vendors suffer a cloud AI breach, is your data exposed?</span> 
+                  <span className="lead-q">Q: Have you experienced unexpected deductions or margin erosion from retailer chargebacks in the last 12 months?</span> 
                   <span className="lead-a">{lead.q3}</span>
                 </div>
               </div>
