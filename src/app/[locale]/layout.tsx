@@ -1,5 +1,8 @@
 import { getDictionary, locales } from '@/i18n';
 import Navigation from '@/components/Navigation';
+import { Analytics } from '@vercel/analytics/next';
+import { SpeedInsights } from '@vercel/speed-insights/next';
+import { manrope, newsreader } from '../fonts';
 
 export async function generateStaticParams() {
   return locales.map((locale) => ({ locale }));
@@ -16,11 +19,20 @@ export default async function LocaleLayout({
   const dictionary = await getDictionary(locale);
 
   return (
-    <>
-      <Navigation siteTitle={dictionary.siteTitle} currentLocale={locale} />
-      <main className="main-content">
-        {children}
-      </main>
-    </>
+    <html lang={locale} className={`${manrope.variable} ${newsreader.variable}`}>
+      <body>
+        <Navigation
+          siteTitle={dictionary.siteTitle}
+          currentLocale={locale}
+          nav={dictionary.nav}
+          formCopy={dictionary.form}
+        />
+        <main className="main-content">
+          {children}
+        </main>
+        <Analytics />
+        <SpeedInsights />
+      </body>
+    </html>
   );
 }

@@ -1,19 +1,178 @@
 {
-  "siteTitle": "IA Cero Fuga",
-  "hero": {
-    "h1": "LA INTELIGENCIA YA ESTÁ DENTRO DE TU EMPRESA.\nLA PREGUNTA ES SI SIGUE BAJO TU CONTROL.",
-    "subH1": "Automatización real, dentro de tu red.\nCero fuga de datos.\nCumplimiento LFPDPPP, por arquitectura—no por promesas.",
-    "stat1": "En Premisas",
-    "stat2": "Fuga de Datos",
-    "stat3": "Cumplimiento por Diseño"
+  "siteTitle": "Zero Leak",
+  "meta": {
+    "title": "Zero Leak | Recupera Tu Margen",
+    "description": "Consultoría ejecutiva de recuperación de margen para marcas que venden a Amazon y Walmart. Recupera entre un margen significativo de margen perdido mediante auditorías diagnósticas y recuperación estratégica."
   },
-  "cta": "Comencemos",
+  "nav": {
+    "insights": "Insights",
+    "partnerStrategy": "Estrategia de Socio",
+    "cta": "Agendar Auditoría"
+  },
+  "hero": {
+    "badge": "Estrategia Ejecutiva",
+    "h1": "Recupera el Margen que el Algoritmo te Está Quitando.",
+    "subH1": "Ayudamos a marcas que venden a Amazon y Walmart a recuperar un margen significativo de margen perdido mediante auditorías diagnósticas y recuperación estratégica.",
+    "ctaPrimary": "Agendar Auditoría Estratégica",
+    "ctaSecondary": "Ver Casos de Éxito",
+    "statRecoveryLabel": "Potencial de Recuperación",
+    "statRecoveryValue": "+15.4%",
+    "statLeakLabel": "Fuga Detectada",
+    "statLeakValue": "Erosión Net PPM"
+  },
   "problem": {
-    "title": "EL PROBLEMA YA NO ES HIPOTÉTICO: ES SHADOW AI",
-    "description": "Tus equipos ya están usando IA pública para trabajar más rápido.\nContratos. Datos de clientes. Estrategias.\n\nNo hay mala intención.\nHay presión por productividad.\n\nPero cada prompt que sale de tu red es una exposición directa.\nSin control. Sin trazabilidad.\n\nY en muchos casos, fuera del cumplimiento de la LFPDPPP.\n\nEsto no es un riesgo futuro.\nEs una brecha activa."
+    "badge": "El Problema",
+    "heading": "El Algoritmo No Es Tu Aliado.",
+    "body": "Los algoritmos de retail como el Net PPM de Amazon tienen un solo propósito: extraer el máximo valor de los proveedores. Tu margen no solo desaparece—está siendo sistemáticamente erosionado a través de descuentos automáticos y gasto en trade invisible.",
+    "card1Title": "Fuga en Allowances de Markdown",
+    "card1Body": "Nuestros datos indican que una porción sustancial de de los allowances de markdown son mal calculados o aplicados a productos con alta velocidad orgánica, subsidiando efectivamente un crecimiento que ya era tuyo.",
+    "card1Footer": "Análisis",
+    "card2Title": "Desperdicio en Trade Spend",
+    "card2Body": "Las auditorías sistemáticas revelan que una cantidad significativa de del trade spend se pierde en ventanas promocionales superpuestas y trampas de precios \"auto-sincronizadas\" que se activan sin intervención humana.",
+    "card2Footer": "Hallazgos",
+    "card3Title": "La Trampa del Net PPM",
+    "card3Body": "Los motores de precios del retailer priorizan su rentabilidad, generando bajadas automáticas de precio que obligan a los proveedores a reclamaciones retroactivas que raramente ganan.",
+    "card3Footer": "Exposición Estratégica"
   },
   "solution": {
-    "title": "NO BLOQUEES LA IA.\nRELOCALÍZALA.",
-    "description": "Infraestructura de IA Air-Gapped, operando 100% dentro de tu red.\n\nModelos corriendo localmente en tus dispositivos y servidores.\nSin internet. Sin terceros. Sin fuga de datos.\n\nNo dependes de la nube.\nNo exportas riesgo.\n\nCumplimiento, control y soberanía… desde la arquitectura."
+    "badge": "Base Tecnológica",
+    "heading": "Inteligencia sin Exposición.",
+    "body": "La mayoría de las herramientas de diagnóstico requieren que subas datos sensibles del ERP a la nube, creando un riesgo corporativo enorme. IA Cero Fuga es diferente.",
+    "feature1Title": "Infraestructura Air-Gapped",
+    "feature1Body": "El framework de auditoría opera localmente. Tus datos nunca salen de tu entorno.",
+    "feature2Title": "Forensia Algorítmica",
+    "feature2Body": "Identifica patrones de extracción de margen que los auditores humanos sistemáticamente pasan por alto.",
+    "feature3Title": "Rutas de Recuperación Verificadas",
+    "feature3Body": "Genera documentación de disputa exacta, pre-formateada para los portales de Amazon y Walmart.",
+    "panelBody": "Inteligencia aislada propietaria para auditorías financieras de alto riesgo.",
+    "imageAlt": "Infraestructura segura de IA Cero Fuga"
+  },
+  "expertise": {
+    "badge": "Nuestro Fundador",
+    "heading": "La Ventaja de la 'Visión Total'.",
+    "body": "Nuestro fundador pasó 17 años en la intersección de la cadena de suministro y el comercio digital. Desde el liderazgo ejecutivo en PMI hasta servir como Amazon Category Leader, ha visto la máquina del retail desde ambos lados.",
+    "quote": "\"En retail, lo que no mides es lo que el algoritmo consume. Te devolvemos la visibilidad para defender tu rentabilidad.\"",
+    "stat1Value": "17 años",
+    "stat1Label": "Trayectoria en la Industria",
+    "stat2Value": "PMI",
+    "stat2Label": "Liderazgo en Supply Chain",
+    "stat3Value": "Amazon",
+    "stat3Label": "Autoridad de Categoría",
+    "imageAlt": "Retrato del fundador"
+  },
+  "cta": {
+    "badge": "Compromiso Estratégico",
+    "heading": "Ve Más Allá de las Auditorías Transaccionales.",
+    "body": "Cierra las fugas de margen con supervisión a nivel ejecutivo. No solo encontramos discrepancias; diseñamos una estrategia de defensa a largo plazo para tus relaciones con el retailer. Asóciate con un ex-Amazon Category Leader para proteger tu rentabilidad.",
+    "ctaPrimary": "Agendar Auditoría Estratégica",
+    "feature1Title": "Análisis a Medida",
+    "feature1Body": "Cada compromiso es adaptado a la arquitectura de tu ERP y a los matices de tu acuerdo con el retailer.",
+    "feature2Title": "Lead-Score de Diagnóstico",
+    "feature2Body": "Nuestro proceso diagnóstico comienza con un cuestionario integral para evaluar el potencial de recuperación antes del despliegue.",
+    "feature3Title": "Asociación Ejecutiva",
+    "feature3Body": "Acceso directo a autoridades de la industria que entienden los incentivos del algoritmo."
+  },
+  "proof": {
+    "heading": "La Prueba de la Precisión.",
+    "body": "Mientras estuvo en Amazon, nuestro liderazgo no solo gestionó el crecimiento—diseñó la eficiencia.",
+    "statValue": "4% Anual",
+    "statLabel": "Mejora de margen diseñada dentro de las categorías más grandes de Amazon.",
+    "bar1Label": "Fuga Típica de Marca",
+    "bar1Value": "12.5%",
+    "bar2Label": "Recuperación Post-Auditoría",
+    "bar2Value": "Zero Leak"
+  },
+  "footer": {
+    "tagline": "Consultoría de precisión para la era algorítmica. Cerramos las brechas que la tecnología crea.",
+    "col1Title": "Práctica",
+    "link1": "Servicios",
+    "link2": "Insights",
+    "link3": "Estrategia de Socio",
+    "col2Title": "Legal",
+    "link4": "Privacidad",
+    "link5": "Contacto",
+    "copyright": "Zero Leak. Precisión Ejecutiva."
+  },
+  "form": {
+    "title": "Solicitar Auditoría Estratégica",
+    "name": "Nombre Completo",
+    "email": "Correo Profesional",
+    "company": "Empresa / Marca",
+    "role": "Cargo Directivo",
+    "linkedin": "URL del Perfil de LinkedIn",
+    "linkedinPlaceholder": "https://linkedin.com/in/tuperfil",
+    "next": "Continuar a la Evaluación",
+    "q1": "¿A qué retailers vendes actualmente?",
+    "q1opts": [
+      {
+        "value": "amazon",
+        "label": "Amazon"
+      },
+      {
+        "value": "walmart",
+        "label": "Walmart"
+      },
+      {
+        "value": "both",
+        "label": "Ambos: Amazon y Walmart"
+      },
+      {
+        "value": "other",
+        "label": "Otro gran retailer"
+      }
+    ],
+    "q2": "¿Aproximadamente qué % de tu P&L atribuyes a trade spend y allowances?",
+    "q2opts": [
+      {
+        "value": "under5",
+        "label": "Menos del 5%"
+      },
+      {
+        "value": "5to15",
+        "label": "5–15%"
+      },
+      {
+        "value": "over15",
+        "label": "Más del 15%"
+      },
+      {
+        "value": "unsure",
+        "label": "No estoy seguro"
+      }
+    ],
+    "q3": "¿Has experimentado deducciones inesperadas o erosión de margen por cargos del retailer en los últimos 12 meses?",
+    "q3opts": [
+      {
+        "value": "yes_significant",
+        "label": "Sí, significativamente"
+      },
+      {
+        "value": "somewhat",
+        "label": "Algo"
+      },
+      {
+        "value": "no",
+        "label": "No"
+      },
+      {
+        "value": "unsure",
+        "label": "No estoy seguro"
+      }
+    ],
+    "submit": "Enviar Solicitud de Auditoría",
+    "disclaimer": "La información recopilada se utiliza estrictamente para evaluación y está protegida por nuestra política de privacidad. No compartimos sus datos con terceros.",
+    "step1": "1/2",
+    "step2": "2/2",
+    "emailError": "Por favor usa un correo corporativo. Los dominios genéricos (gmail, yahoo, etc.) no están permitidos.",
+    "requiredError": "Campos obligatorios.",
+    "invalidEmailError": "Por favor ingresa una dirección de correo válida.",
+    "invalidLinkedinError": "Por favor ingresa una URL válida de perfil de LinkedIn.",
+    "fallbackTitle": "Verificación de Identidad Profesional",
+    "fallbackMsg": "Notamos que usas un proveedor de correo genérico. Aunque priorizamos dominios corporativos verificados, los profesionales independientes pueden continuar proporcionando su perfil de LinkedIn para revisión manual.",
+    "submitAnyway": "Verificar y Continuar",
+    "close": "Cerrar",
+    "successMessage": "¡Solicitud de Auditoría enviada con éxito!",
+    "sending": "Enviando...",
+    "genericError": "Error al procesar la solicitud."
   }
 }

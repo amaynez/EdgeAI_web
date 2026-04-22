@@ -1,8 +1,11 @@
-import Image from 'next/image';
 import { getDictionary } from '@/i18n';
 import Hero from '@/components/Hero';
-import ProblemSolution from '@/components/ProblemSolution';
-import DynamicCTA from '@/components/DynamicCTA';
+import TheAlgorithm from '@/components/TheAlgorithm';
+import IACeroFuga from '@/components/IACeroFuga';
+import Expertise from '@/components/Expertise';
+import CtaPanel from '@/components/CtaPanel';
+import Proof from '@/components/Proof';
+import SiteFooter from '@/components/Footer';
 
 export default async function Home({
   params,
@@ -14,22 +17,13 @@ export default async function Home({
 
   return (
     <div className="home-container">
-      <Hero dictionary={dictionary} locale={locale} />
-      <ProblemSolution dictionary={dictionary} />
-      <DynamicCTA ctaText={dictionary.cta} locale={locale} />
-
-      <footer className="page-footer-logo">
-        <Image
-          src="/favicon_io/android-chrome-512x512.png"
-          alt={dictionary.siteTitle}
-          width={48}
-          height={48}
-          loading="lazy"
-        />
-        <span className="page-footer-copy">
-          © {new Date().getFullYear()} {dictionary.siteTitle}. All rights reserved.
-        </span>
-      </footer>
+      <Hero dictionary={dictionary} />
+      <TheAlgorithm dictionary={dictionary} />
+      <IACeroFuga dictionary={dictionary} />
+      <Expertise dictionary={dictionary} />
+      <CtaPanel cta={dictionary.cta} formCopy={dictionary.form} locale={locale} />
+      <Proof dictionary={dictionary} />
+      <SiteFooter dictionary={dictionary} />
     </div>
   );
 }
