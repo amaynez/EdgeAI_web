@@ -8,6 +8,7 @@ export default function LeadsTable({ initialLeads }: { initialLeads: any[] }) {
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [expandedLeads, setExpandedLeads] = useState<Set<string>>(new Set());
   const [now, setNow] = useState(Date.now());
+  const [showUncontactedOnly, setShowUncontactedOnly] = useState(true);
   // Track in-flight toggle calls to prevent concurrent updates for the same lead.
   const pendingToggles = useRef<Set<string>>(new Set());
   const isPolling = useRef(false);
@@ -109,13 +110,37 @@ export default function LeadsTable({ initialLeads }: { initialLeads: any[] }) {
     }
   };
 
+  const filteredLeads = showUncontactedOnly
+    ? leads.filter(l => !l.contacted)
+    : leads;
+
   if (leads.length === 0) {
     return <div style={{ textAlign: 'center', padding: '4rem', color: 'var(--text-secondary)' }}>No leads found yet.</div>;
   }
 
   return (
-    <div className="leads-grid">
-      {leads.map((lead) => {
+    <div>
+      <div className="view-toggle-container">
+        <span className={`view-toggle-label ${!showUncontactedOnly ? 'active' : ''}`} onClick={() => setShowUncontactedOnly(false)}>All Leads</span>
+        <label className="view-toggle-switch">
+          <input
+            type="checkbox"
+            checked={showUncontactedOnly}
+            onChange={(e) => setShowUncontactedOnly(e.target.checked)}
+            aria-label="Toggle uncontacted leads only"
+          />
+          <span className="view-toggle-slider"></span>
+        </label>
+        <span className={`view-toggle-label ${showUncontactedOnly ? 'active' : ''}`} onClick={() => setShowUncontactedOnly(true)}>Uncontacted Only</span>
+      </div>
+
+      {filteredLeads.length === 0 ? (
+        <div style={{ textAlign: 'center', padding: '4rem', color: 'var(--text-secondary)' }}>
+          No uncontacted leads left. Great job!
+        </div>
+      ) : (
+        <div className="leads-grid">
+          {filteredLeads.map((lead) => {
         const isHighUrgency = lead.qualification?.urgencyScore >= 8;
         const isContacted = !!lead.contacted;
         
@@ -296,6 +321,8 @@ export default function LeadsTable({ initialLeads }: { initialLeads: any[] }) {
           </div>
         );
       })}
+        </div>
+      )}
     </div>
   );
 }
