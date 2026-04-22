@@ -2,7 +2,7 @@ export default function Proof({ dictionary }: { dictionary: any }) {
   const p = dictionary.proof;
 
   return (
-    <section className="proof-section">
+    <section className="proof-section" id="proof">
       <div className="proof-inner">
         <div className="proof-card">
           <div className="proof-copy">
@@ -21,7 +21,7 @@ export default function Proof({ dictionary }: { dictionary: any }) {
                 <span className="bar-value font-serif">{p.bar1Value}</span>
               </div>
               <div className="progress-track">
-                <div className="progress-fill-red" />
+                <div className="progress-fill-red" style={{ width: p.bar1Value.includes('%') ? p.bar1Value : '85%' }} />
               </div>
             </div>
             <div>
@@ -30,7 +30,7 @@ export default function Proof({ dictionary }: { dictionary: any }) {
                 <span className="bar-value-green">{p.bar2Value}</span>
               </div>
               <div className="progress-track">
-                <div className="progress-fill-green" />
+                <div className="progress-fill-green" style={{ width: p.bar2Value.includes('%') ? p.bar2Value : '98%' }} />
               </div>
             </div>
           </div>

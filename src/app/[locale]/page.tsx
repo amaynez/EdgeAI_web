@@ -21,7 +21,7 @@ export default async function Home({
       <TheAlgorithm dictionary={dictionary} />
       <IACeroFuga dictionary={dictionary} />
       <Expertise dictionary={dictionary} />
-      <CtaPanel dictionary={dictionary} locale={locale} />
+      <CtaPanel cta={dictionary.cta} formCopy={dictionary.form} locale={locale} />
       <Proof dictionary={dictionary} />
       <SiteFooter dictionary={dictionary} />
     </div>

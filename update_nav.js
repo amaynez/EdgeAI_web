@@ -1,4 +1,5 @@
-'use client';
+const fs = require('fs');
+const content = `'use client';
 import { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
 import LanguageSelector from './LanguageSelector';
@@ -61,15 +62,15 @@ export default function Navigation({
     <>
       <nav className="main-nav">
         <div className="nav-container">
-          <Link href={`/${currentLocale}`} className="nav-wordmark">{siteTitle}</Link>
+          <Link href={\`/\${currentLocale}\`} className="nav-wordmark">{siteTitle}</Link>
 
-          <div className="nav-links ">
+          <div className="nav-links hidden md:flex">
             <a href="#insights" className="nav-link">{nav.insights}</a>
             <a href="#consultation" className="nav-link nav-link-active">{nav.partnerStrategy}</a>
           </div>
 
           <div className="nav-right">
-            <div className=" items-center gap-6">
+            <div className="hidden md:flex items-center gap-6">
               <LanguageSelector currentLocale={currentLocale} />
               <button
                 className="nav-cta-btn"
@@ -82,7 +83,7 @@ export default function Navigation({
             
             <button
               ref={buttonRef}
-              className="nav-hamburger "
+              className="nav-hamburger md:hidden"
               onClick={toggleMenu}
               onKeyDown={(e) => {
                 if (e.key === 'Enter' || e.key === ' ') {
@@ -103,7 +104,7 @@ export default function Navigation({
           <div 
             id="mobile-menu" 
             ref={menuRef}
-            className=" bg-white w-full border-t border-slate-200 p-4 flex flex-col gap-4 absolute top-full left-0 shadow-lg"
+            className="md:hidden bg-white w-full border-t border-slate-200 p-4 flex flex-col gap-4 absolute top-full left-0 shadow-lg"
           >
             <a href="#insights" className="nav-link" onClick={() => setMenuOpen(false)}>{nav.insights}</a>
             <a href="#consultation" className="nav-link nav-link-active" onClick={() => setMenuOpen(false)}>{nav.partnerStrategy}</a>
@@ -131,3 +132,5 @@ export default function Navigation({
     </>
   );
 }
+`;
+fs.writeFileSync('./src/components/Navigation.tsx', content);

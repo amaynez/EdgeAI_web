@@ -2,8 +2,7 @@
 import React, { useState } from 'react';
 
 type AuditLeadFormProps = {
-  locale: string;
-  dictionary: any;
+  formCopy: any;
   onClose?: () => void;
   onSuccess?: (message: string) => void;
   onError?: (message: string) => void;
@@ -11,8 +10,8 @@ type AuditLeadFormProps = {
 
 const GENERIC_DOMAINS = ['gmail.com', 'yahoo.com', 'hotmail.com', 'outlook.com', 'aol.com', 'icloud.com'];
 
-export default function AuditLeadForm({ locale, dictionary, onClose, onSuccess, onError }: AuditLeadFormProps) {
-  const dict = dictionary.form;
+export default function AuditLeadForm({ formCopy, onClose, onSuccess, onError }: AuditLeadFormProps) {
+  const dict = formCopy;
 
   const [step, setStep] = useState(1);
   const [formData, setFormData] = useState({
@@ -44,7 +43,7 @@ export default function AuditLeadForm({ locale, dictionary, onClose, onSuccess, 
     if (validateStep1()) {
       const emailDomain = formData.email.split('@')[1]?.toLowerCase();
       if (emailDomain && GENERIC_DOMAINS.includes(emailDomain)) {
-        if (!formData.linkedin) setFormData({ ...formData, linkedin: 'https://www.linkedin.com/in/' });
+        setFormData(prev => ({ ...prev, linkedin: prev.linkedin || 'https://www.linkedin.com/in/' }));
         setStep(3);
       } else {
         setStep(2);
@@ -64,13 +63,11 @@ export default function AuditLeadForm({ locale, dictionary, onClose, onSuccess, 
       });
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || 'Failed to submit form');
-      const successMsg = locale === 'es'
-        ? '¡Solicitud de Auditoría Enviada con éxito!'
-        : 'Audit Request Successfully Submitted!';
+      const successMsg = dict.successMessage;
       if (onSuccess) onSuccess(successMsg);
       else { alert(successMsg); if (onClose) onClose(); }
     } catch (err: any) {
-      const errMsg = err.message || (locale === 'es' ? 'Error al procesar la solicitud' : 'Error processing request');
+      const errMsg = dict.genericError;
       setError(errMsg);
       if (onError) onError(errMsg);
     } finally {
@@ -138,7 +135,7 @@ export default function AuditLeadForm({ locale, dictionary, onClose, onSuccess, 
                 </select>
               </div>
               <button type="submit" className="btn-primary audit-button" disabled={isSubmitting}>
-                {isSubmitting ? (locale === 'es' ? 'Enviando...' : 'Sending...') : dict.submit}
+                {isSubmitting ? dict.sending : dict.submit}
               </button>
             </div>
           )}

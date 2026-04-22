@@ -28,7 +28,7 @@ export default function Expertise({ dictionary }: { dictionary: any }) {
         <div className="expertise-photo-wrap">
           <Image
             src="/founder.jpg"
-            alt="Founder portrait"
+            alt={e.imageAlt || "Founder portrait"}
             width={480}
             height={600}
             className="expertise-photo"

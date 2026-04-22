@@ -2,7 +2,7 @@
   "siteTitle": "Zero Leak",
   "meta": {
     "title": "Zero Leak | Recupera Tu Margen",
-    "description": "Consultoría ejecutiva de recuperación de margen para marcas que venden a Amazon y Walmart. Recupera entre el 10–15% de margen perdido mediante auditorías diagnósticas y recuperación estratégica."
+    "description": "Consultoría ejecutiva de recuperación de margen para marcas que venden a Amazon y Walmart. Recupera entre un margen significativo de margen perdido mediante auditorías diagnósticas y recuperación estratégica."
   },
   "nav": {
     "insights": "Insights",
@@ -12,7 +12,7 @@
   "hero": {
     "badge": "Estrategia Ejecutiva",
     "h1": "Recupera el Margen que el Algoritmo te Está Quitando.",
-    "subH1": "Ayudamos a marcas que venden a Amazon y Walmart a recuperar el 10–15% de margen perdido mediante auditorías diagnósticas y recuperación estratégica.",
+    "subH1": "Ayudamos a marcas que venden a Amazon y Walmart a recuperar un margen significativo de margen perdido mediante auditorías diagnósticas y recuperación estratégica.",
     "ctaPrimary": "Agendar Auditoría Estratégica",
     "ctaSecondary": "Ver Casos de Éxito",
     "statRecoveryLabel": "Potencial de Recuperación",
@@ -25,11 +25,11 @@
     "heading": "El Algoritmo No Es Tu Aliado.",
     "body": "Los algoritmos de retail como el Net PPM de Amazon tienen un solo propósito: extraer el máximo valor de los proveedores. Tu margen no solo desaparece—está siendo sistemáticamente erosionado a través de descuentos automáticos y gasto en trade invisible.",
     "card1Title": "Fuga en Allowances de Markdown",
-    "card1Body": "Nuestros datos indican que más del 40% de los allowances de markdown son mal calculados o aplicados a productos con alta velocidad orgánica, subsidiando efectivamente un crecimiento que ya era tuyo.",
-    "card1Footer": "Análisis Documento_2",
+    "card1Body": "Nuestros datos indican que una porción sustancial de de los allowances de markdown son mal calculados o aplicados a productos con alta velocidad orgánica, subsidiando efectivamente un crecimiento que ya era tuyo.",
+    "card1Footer": "Análisis",
     "card2Title": "Desperdicio en Trade Spend",
-    "card2Body": "Las auditorías sistemáticas revelan que hasta el 22% del trade spend se pierde en ventanas promocionales superpuestas y trampas de precios \"auto-sincronizadas\" que se activan sin intervención humana.",
-    "card2Footer": "Hallazgos Documento_4",
+    "card2Body": "Las auditorías sistemáticas revelan que una cantidad significativa de del trade spend se pierde en ventanas promocionales superpuestas y trampas de precios \"auto-sincronizadas\" que se activan sin intervención humana.",
+    "card2Footer": "Hallazgos",
     "card3Title": "La Trampa del Net PPM",
     "card3Body": "Los motores de precios del retailer priorizan su rentabilidad, generando bajadas automáticas de precio que obligan a los proveedores a reclamaciones retroactivas que raramente ganan.",
     "card3Footer": "Exposición Estratégica"
@@ -43,7 +43,9 @@
     "feature2Title": "Forensia Algorítmica",
     "feature2Body": "Identifica patrones de extracción de margen que los auditores humanos sistemáticamente pasan por alto.",
     "feature3Title": "Rutas de Recuperación Verificadas",
-    "feature3Body": "Genera documentación de disputa exacta, pre-formateada para los portales de Amazon y Walmart."
+    "feature3Body": "Genera documentación de disputa exacta, pre-formateada para los portales de Amazon y Walmart.",
+    "panelBody": "Inteligencia aislada propietaria para auditorías financieras de alto riesgo.",
+    "imageAlt": "Infraestructura segura de IA Cero Fuga"
   },
   "expertise": {
     "badge": "Nuestro Fundador",
@@ -55,7 +57,8 @@
     "stat2Value": "PMI",
     "stat2Label": "Liderazgo en Supply Chain",
     "stat3Value": "Amazon",
-    "stat3Label": "Autoridad de Categoría"
+    "stat3Label": "Autoridad de Categoría",
+    "imageAlt": "Retrato del fundador"
   },
   "cta": {
     "badge": "Compromiso Estratégico",
@@ -101,36 +104,75 @@
     "next": "Continuar a la Evaluación",
     "q1": "¿A qué retailers vendes actualmente?",
     "q1opts": [
-      { "value": "amazon", "label": "Amazon" },
-      { "value": "walmart", "label": "Walmart" },
-      { "value": "both", "label": "Ambos: Amazon y Walmart" },
-      { "value": "other", "label": "Otro gran retailer" }
+      {
+        "value": "amazon",
+        "label": "Amazon"
+      },
+      {
+        "value": "walmart",
+        "label": "Walmart"
+      },
+      {
+        "value": "both",
+        "label": "Ambos: Amazon y Walmart"
+      },
+      {
+        "value": "other",
+        "label": "Otro gran retailer"
+      }
     ],
     "q2": "¿Aproximadamente qué % de tu P&L atribuyes a trade spend y allowances?",
     "q2opts": [
-      { "value": "under5", "label": "Menos del 5%" },
-      { "value": "5to15", "label": "5–15%" },
-      { "value": "over15", "label": "Más del 15%" },
-      { "value": "unsure", "label": "No estoy seguro" }
+      {
+        "value": "under5",
+        "label": "Menos del 5%"
+      },
+      {
+        "value": "5to15",
+        "label": "5–15%"
+      },
+      {
+        "value": "over15",
+        "label": "Más del 15%"
+      },
+      {
+        "value": "unsure",
+        "label": "No estoy seguro"
+      }
     ],
     "q3": "¿Has experimentado deducciones inesperadas o erosión de margen por cargos del retailer en los últimos 12 meses?",
     "q3opts": [
-      { "value": "yes_significant", "label": "Sí, significativamente" },
-      { "value": "somewhat", "label": "Algo" },
-      { "value": "no", "label": "No" },
-      { "value": "unsure", "label": "No estoy seguro" }
+      {
+        "value": "yes_significant",
+        "label": "Sí, significativamente"
+      },
+      {
+        "value": "somewhat",
+        "label": "Algo"
+      },
+      {
+        "value": "no",
+        "label": "No"
+      },
+      {
+        "value": "unsure",
+        "label": "No estoy seguro"
+      }
     ],
     "submit": "Enviar Solicitud de Auditoría",
-    "disclaimer": "Toda la información enviada está protegida bajo un estricto acuerdo de confidencialidad. Nunca compartimos tus datos con terceros.",
+    "disclaimer": "La información recopilada se utiliza estrictamente para evaluación y está protegida por nuestra política de privacidad. No compartimos sus datos con terceros.",
     "step1": "1/2",
     "step2": "2/2",
     "emailError": "Por favor usa un correo corporativo. Los dominios genéricos (gmail, yahoo, etc.) no están permitidos.",
-    "requiredError": "Todos los campos son obligatorios.",
+    "requiredError": "Campos obligatorios.",
     "invalidEmailError": "Por favor ingresa una dirección de correo válida.",
     "invalidLinkedinError": "Por favor ingresa una URL válida de perfil de LinkedIn.",
     "fallbackTitle": "Verificación de Identidad Profesional",
     "fallbackMsg": "Notamos que usas un proveedor de correo genérico. Aunque priorizamos dominios corporativos verificados, los profesionales independientes pueden continuar proporcionando su perfil de LinkedIn para revisión manual.",
     "submitAnyway": "Verificar y Continuar",
-    "close": "Cerrar"
+    "close": "Cerrar",
+    "successMessage": "¡Solicitud de Auditoría enviada con éxito!",
+    "sending": "Enviando...",
+    "genericError": "Error al procesar la solicitud."
   }
 }

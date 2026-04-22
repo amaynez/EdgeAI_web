@@ -2,7 +2,7 @@
   "siteTitle": "Zero Leak",
   "meta": {
     "title": "Zero Leak | Recover Your Margin",
-    "description": "Executive margin recovery consulting for retail brands selling to Amazon and Walmart. Recover 10–15% of lost margin through diagnostic audits and strategic recovery."
+    "description": "Executive margin recovery consulting for retail brands selling to Amazon and Walmart. Recover significant of lost margin through diagnostic audits and strategic recovery."
   },
   "nav": {
     "insights": "Insights",
@@ -12,7 +12,7 @@
   "hero": {
     "badge": "Executive Strategy",
     "h1": "Recover the Margin You're Bleeding to the Algorithm.",
-    "subH1": "We help retail brands selling to Amazon and Walmart recover 10–15% of lost margin through diagnostic audits and strategic recovery.",
+    "subH1": "We help retail brands selling to Amazon and Walmart recover significant of lost margin through diagnostic audits and strategic recovery.",
     "ctaPrimary": "Book a Strategic Audit",
     "ctaSecondary": "View Case Studies",
     "statRecoveryLabel": "Recovery Potential",
@@ -25,11 +25,11 @@
     "heading": "The Algorithm Is Not Your Partner.",
     "body": "Retail algorithms like Amazon's Net PPM are designed for one purpose: to extract maximum value from suppliers. Your margin isn't just disappearing—it's being systematically engineered away through automated markdown allowances and invisible trade spend waste.",
     "card1Title": "Markdown Allowance Leakage",
-    "card1Body": "Our data indicates that over 40% of markdown allowances are miscalculated or applied to products with high organic velocity, effectively subsidizing growth you already owned.",
-    "card1Footer": "Document_2 analysis",
+    "card1Body": "Our data indicates that a substantial portion of of markdown allowances are miscalculated or applied to products with high organic velocity, effectively subsidizing growth you already owned.",
+    "card1Footer": "Analysis",
     "card2Title": "Trade Spend Waste",
-    "card2Body": "Systematic audits reveal that up to 22% of trade spend is lost to overlapping promotional windows and \"auto-matched\" pricing traps that trigger without human intervention.",
-    "card2Footer": "Document_4 findings",
+    "card2Body": "Systematic audits reveal that a significant amount of of trade spend is lost to overlapping promotional windows and \"auto-matched\" pricing traps that trigger without human intervention.",
+    "card2Footer": "Findings",
     "card3Title": "The Net PPM Trap",
     "card3Body": "Retailer pricing engines prioritize their bottom line, triggering automatic price drops that force vendors into retroactive profit-protection claims they rarely win.",
     "card3Footer": "Strategic Exposure"
@@ -43,7 +43,9 @@
     "feature2Title": "Algorithmic Forensics",
     "feature2Body": "Identifies patterns of margin extraction that human auditors consistently miss.",
     "feature3Title": "Verified Recovery Routes",
-    "feature3Body": "Outputs exact dispute documentation pre-formatted for Amazon and Walmart portals."
+    "feature3Body": "Outputs exact dispute documentation pre-formatted for Amazon and Walmart portals.",
+    "panelBody": "Proprietary air-gapped intelligence for high-stakes financial auditing.",
+    "imageAlt": "IA Cero Fuga secure infrastructure"
   },
   "expertise": {
     "badge": "Our Founder",
@@ -55,7 +57,8 @@
     "stat2Value": "PMI",
     "stat2Label": "Supply Chain Leadership",
     "stat3Value": "Amazon",
-    "stat3Label": "Category Authority"
+    "stat3Label": "Category Authority",
+    "imageAlt": "Founder portrait"
   },
   "cta": {
     "badge": "Strategic Engagement",
@@ -101,36 +104,75 @@
     "next": "Continue to Assessment",
     "q1": "Which retailers do you currently sell to?",
     "q1opts": [
-      { "value": "amazon", "label": "Amazon" },
-      { "value": "walmart", "label": "Walmart" },
-      { "value": "both", "label": "Both Amazon & Walmart" },
-      { "value": "other", "label": "Other large retailer" }
+      {
+        "value": "amazon",
+        "label": "Amazon"
+      },
+      {
+        "value": "walmart",
+        "label": "Walmart"
+      },
+      {
+        "value": "both",
+        "label": "Both Amazon & Walmart"
+      },
+      {
+        "value": "other",
+        "label": "Other large retailer"
+      }
     ],
     "q2": "Approximately what % of your P&L do you attribute to trade spend and allowances?",
     "q2opts": [
-      { "value": "under5", "label": "Less than 5%" },
-      { "value": "5to15", "label": "5–15%" },
-      { "value": "over15", "label": "Over 15%" },
-      { "value": "unsure", "label": "Not sure" }
+      {
+        "value": "under5",
+        "label": "Less than 5%"
+      },
+      {
+        "value": "5to15",
+        "label": "5–15%"
+      },
+      {
+        "value": "over15",
+        "label": "Over 15%"
+      },
+      {
+        "value": "unsure",
+        "label": "Not sure"
+      }
     ],
     "q3": "Have you experienced unexpected deductions or margin erosion from retailer chargebacks in the last 12 months?",
     "q3opts": [
-      { "value": "yes_significant", "label": "Yes, significantly" },
-      { "value": "somewhat", "label": "Somewhat" },
-      { "value": "no", "label": "No" },
-      { "value": "unsure", "label": "Not sure" }
+      {
+        "value": "yes_significant",
+        "label": "Yes, significantly"
+      },
+      {
+        "value": "somewhat",
+        "label": "Somewhat"
+      },
+      {
+        "value": "no",
+        "label": "No"
+      },
+      {
+        "value": "unsure",
+        "label": "Not sure"
+      }
     ],
     "submit": "Submit Audit Request",
-    "disclaimer": "All submitted information is protected under strict NDA. We never share your data with third parties.",
+    "disclaimer": "Information collected is used strictly for audit evaluation and protected by our privacy policy. We do not share your data with third parties. Read our Privacy Policy for more details.",
     "step1": "1/2",
     "step2": "2/2",
     "emailError": "Please use a corporate email. Generic domains (gmail, yahoo, etc.) are restricted.",
-    "requiredError": "All fields are required.",
+    "requiredError": "Required fields.",
     "invalidEmailError": "Please enter a valid email address.",
     "invalidLinkedinError": "Please enter a valid LinkedIn profile URL.",
     "fallbackTitle": "Professional Identity Verification",
     "fallbackMsg": "We noticed you're using a generic email provider. While we prioritize verified corporate domains, independent professionals may proceed by providing their LinkedIn profile for manual review.",
     "submitAnyway": "Verify & Continue",
-    "close": "Close"
+    "close": "Close",
+    "successMessage": "Audit Request Successfully Submitted!",
+    "sending": "Sending...",
+    "genericError": "Error processing request."
   }
 }

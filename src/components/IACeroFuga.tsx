@@ -17,8 +17,9 @@ export default function IACeroFuga({ dictionary }: { dictionary: any }) {
           <div className="solution-img-panel">
             <Image
               src="/analytics-dashboard.jpg"
-              alt="IA Cero Fuga secure infrastructure"
+              alt={s.imageAlt || "IA Cero Fuga secure infrastructure"}
               fill
+              sizes="(min-width:1024px) 50vw, 100vw"
               style={{ objectFit: 'cover' }}
             />
             <div className="solution-img-overlay">
@@ -27,7 +28,7 @@ export default function IACeroFuga({ dictionary }: { dictionary: any }) {
                 <h3 className="solution-img-title font-serif">IA Cero Fuga</h3>
                 <div className="solution-img-divider" />
                 <p className="solution-img-body">
-                  Proprietary air-gapped intelligence for high-stakes financial auditing.
+                  {s.panelBody}
                 </p>
               </div>
             </div>

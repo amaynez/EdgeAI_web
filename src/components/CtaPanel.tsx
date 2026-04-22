@@ -2,10 +2,10 @@
 import { useState } from 'react';
 import AuditLeadForm from './AuditLeadForm';
 
-export default function CtaPanel({ dictionary, locale }: { dictionary: any; locale: string }) {
+export default function CtaPanel({ cta, formCopy, locale }: { cta: any; formCopy: any; locale: string }) {
   const [open, setOpen] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
-  const c = dictionary.cta;
+  const c = cta;
 
   const features = [
     { title: c.feature1Title, body: c.feature1Body },
@@ -42,7 +42,7 @@ export default function CtaPanel({ dictionary, locale }: { dictionary: any; loca
                   <span className="btn-arrow">→</span>
                 </button>
                 {successMessage && (
-                  <p className="cta-message cta-success">{successMessage}</p>
+                  <p className="cta-message cta-success" aria-live="polite" aria-atomic="true" role="status">{successMessage}</p>
                 )}
               </div>
             </div>
@@ -61,8 +61,7 @@ export default function CtaPanel({ dictionary, locale }: { dictionary: any; loca
 
       {open && (
         <AuditLeadForm
-          locale={locale}
-          dictionary={dictionary}
+          formCopy={formCopy}
           onClose={() => setOpen(false)}
           onSuccess={(msg) => { setSuccessMessage(msg); setOpen(false); }}
         />

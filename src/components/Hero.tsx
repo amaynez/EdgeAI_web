@@ -3,7 +3,7 @@ import { useState } from 'react';
 import Image from 'next/image';
 import AuditLeadForm from './AuditLeadForm';
 
-export default function Hero({ dictionary }: { dictionary: any }) {
+export default function Hero({ dictionary, locale }: { dictionary: any; locale: string }) {
   const [formOpen, setFormOpen] = useState(false);
   const h = dictionary.hero;
 
@@ -24,7 +24,7 @@ export default function Hero({ dictionary }: { dictionary: any }) {
               {h.ctaPrimary}
               <span>→</span>
             </button>
-            <button className="btn-secondary">{h.ctaSecondary}</button>
+            <button className="btn-secondary" onClick={() => document.getElementById('proof')?.scrollIntoView({ behavior: 'smooth' })}>{h.ctaSecondary}</button>
           </div>
         </div>
 
@@ -54,8 +54,7 @@ export default function Hero({ dictionary }: { dictionary: any }) {
 
       {formOpen && (
         <AuditLeadForm
-          locale=""
-          dictionary={dictionary}
+          formCopy={dictionary.form}
           onClose={() => setFormOpen(false)}
           onSuccess={() => setFormOpen(false)}
         />
