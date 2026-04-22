@@ -16,3 +16,9 @@ https://nextjs.org/telemetry
  GET /en 200 in 6.3s (next.js: 5.1s, proxy.ts: 509ms, generate-params: 1135ms, application-code: 643ms)
 [browser] Image with src "/analytics-dashboard.jpg" has either width or height modified, but not the other. If you use CSS to change the size of your image, also include the styles 'width: "auto"' or 'height: "auto"' to maintain the aspect ratio.
 [browser] Image with src "/founder.jpg" has either width or height modified, but not the other. If you use CSS to change the size of your image, also include the styles 'width: "auto"' or 'height: "auto"' to maintain the aspect ratio.
+ GET /en 200 in 1317ms (next.js: 370ms, proxy.ts: 149ms, generate-params: 232ms, application-code: 798ms)
+[browser] Image with src "/analytics-dashboard.jpg" has either width or height modified, but not the other. If you use CSS to change the size of your image, also include the styles 'width: "auto"' or 'height: "auto"' to maintain the aspect ratio.
+[browser] Image with src "/founder.jpg" has either width or height modified, but not the other. If you use CSS to change the size of your image, also include the styles 'width: "auto"' or 'height: "auto"' to maintain the aspect ratio.
+ GET /en 200 in 235ms (next.js: 29ms, proxy.ts: 8ms, generate-params: 20ms, application-code: 198ms)
+[browser] Image with src "/analytics-dashboard.jpg" has either width or height modified, but not the other. If you use CSS to change the size of your image, also include the styles 'width: "auto"' or 'height: "auto"' to maintain the aspect ratio.
+[browser] Image with src "/founder.jpg" has either width or height modified, but not the other. If you use CSS to change the size of your image, also include the styles 'width: "auto"' or 'height: "auto"' to maintain the aspect ratio.

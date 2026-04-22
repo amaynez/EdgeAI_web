@@ -94,8 +94,8 @@ export default function Navigation({
           <Link href={`/${currentLocale}`} className="nav-wordmark">{siteTitle}</Link>
 
           <div className="nav-links ">
-            <a href="#insights" className={`nav-link ${activeSection === 'insights' ? 'nav-link-active' : ''}`}>{nav.insights}</a>
-            <a href="#consultation" className={`nav-link ${activeSection === 'consultation' ? 'nav-link-active' : ''}`}>{nav.partnerStrategy}</a>
+            <a href="#insights" className={`nav-link ${activeSection === 'insights' ? 'nav-link-active' : ''}`} {...(activeSection === 'insights' ? { 'aria-current': 'location' } : {})}>{nav.insights}</a>
+            <a href="#consultation" className={`nav-link ${activeSection === 'consultation' ? 'nav-link-active' : ''}`} {...(activeSection === 'consultation' ? { 'aria-current': 'location' } : {})}>{nav.partnerStrategy}</a>
           </div>
 
           <div className="nav-right">
