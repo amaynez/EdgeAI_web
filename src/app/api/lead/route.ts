@@ -68,9 +68,9 @@ const GENERIC_DOMAINS = ['gmail.com', 'yahoo.com', 'hotmail.com', 'outlook.com',
 
 // Allowed enum values for the three qualification questions.
 // Keep these in sync with the values emitted by the front-end form.
-const Q1_VALUES = ['none', 'chatgpt', 'copilot', 'gemini', 'other', 'multiple'] as const;
-const Q2_VALUES = ['yes', 'no', 'unsure'] as const;
-const Q3_VALUES = ['yes', 'no', 'unsure'] as const;
+const Q1_VALUES = ['amazon', 'walmart', 'both', 'other'] as const;
+const Q2_VALUES = ['under5', '5to15', 'over15', 'unsure'] as const;
+const Q3_VALUES = ['yes_significant', 'somewhat', 'no', 'unsure'] as const;
 
 type Q1Value = typeof Q1_VALUES[number];
 type Q2Value = typeof Q2_VALUES[number];
@@ -248,12 +248,12 @@ async function processLeadBackground(leadId: string, leadData: LeadData) {
     if (process.env.GEMINI_API_KEY) {
       const model = genAI.getGenerativeModel({
         model: 'gemini-flash-lite-latest',
-        systemInstruction: `You are an expert B2B AI Consultant evaluator. Analyze this inbound lead for your consulting business. You must return ONLY a raw valid JSON object with the following schema, and no other text:
+        systemInstruction: `You are an expert B2B Margin Recovery Consultant evaluator. Analyze this inbound lead for your consulting business. You must return ONLY a raw valid JSON object with the following schema, and no other text:
 {
-  "urgencyScore": (number 1-10, based on how urgently they need AI security/auditing based on answers and company context),
-  "potentialScore": (number 1-10, based on their role, company size potential, and tech stack),
-  "analysis": "1-2 sentence concise analysis of their vulnerability and why they are a good lead",
-  "draftEmail": "A professional HTML-formatted reply draft to the lead addressing their specific pain points, proposing a brief introductory chat. Emphasize how you can help them specifically based on their answers. Sign it as 'Armando Maynez, B2B AI Consultant'."
+  "urgencyScore": (number 1-10, based on how urgently they need margin recovery/auditing based on answers and company context),
+  "potentialScore": (number 1-10, based on their role, company size potential, and retailer exposure),
+  "analysis": "1-2 sentence concise analysis of their margin leakage vulnerability and why they are a good lead",
+  "draftEmail": "A professional HTML-formatted reply draft to the lead addressing their specific pain points, proposing a brief introductory chat. Emphasize how you can help them specifically based on their answers. Sign it as 'Armando Maynez, Founder at Zero Leak'."
 }`
       });
 
@@ -264,11 +264,10 @@ Lead Profile:
 - Company: ${company}
 ${linkedin ? `- LinkedIn: ${linkedin}` : ''}
 ${apolloDataStr}
-
 Assessment Answers:
-1. AI tools accessed (last 30 days)? ${q1}
-2. Operational data containing PII/IP? ${q2}
-3. Data exposed via cloud AI breach? ${q3}
+1. Retailers currently selling to? ${q1}
+2. % of P&L attributed to trade spend/allowances? ${q2}
+3. Experienced unexpected deductions/margin erosion in last 12 months? ${q3}
       `;
 
       const result = await model.generateContent(prompt);
@@ -308,10 +307,10 @@ Assessment Answers:
         from: user,
         to: user, // Send to yourself
         replyTo: email,
-        subject: `[Lead: ${aiInsights.potentialScore}/10] AI Audit Request: ${escapeHtml(company)}`,
+        subject: `[Lead: ${aiInsights.potentialScore}/10] Strategic Audit Request: ${escapeHtml(company)}`,
         html: `
           <div style="font-family: sans-serif; max-width: 600px; margin: auto; padding: 20px; color: #333; line-height: 1.6;">
-            <h2 style="border-bottom: 2px solid #000; padding-bottom: 10px;">New AI Audit Lead Captured</h2>
+            <h2 style="border-bottom: 2px solid #000; padding-bottom: 10px;">New Strategic Audit Lead Captured</h2>
             
             <div style="background-color: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 20px; border-left: 4px solid #007bff;">
               <h3 style="margin-top: 0;">AI Qualification Insights</h3>
@@ -335,9 +334,9 @@ Assessment Answers:
 
             <h3 style="color: #000; border-bottom: 1px solid #ddd; padding-bottom: 4px; margin-top: 24px;">Vulnerability Assessment Answers</h3>
             <ul style="padding-left: 20px;">
-              <li><strong>Q1: AI tools accessed (last 30 days)?</strong><br> ${escapeHtml(q1)}</li>
-              <li style="margin-top: 10px;"><strong>Q2: Operational data containing PII/IP?</strong><br> ${escapeHtml(q2)}</li>
-              <li style="margin-top: 10px;"><strong>Q3: Data exposed via cloud AI breach?</strong><br> ${escapeHtml(q3)}</li>
+              <li><strong>Q1: Retailers currently selling to?</strong><br> ${escapeHtml(q1)}</li>
+              <li style="margin-top: 10px;"><strong>Q2: % of P&L attributed to trade spend/allowances?</strong><br> ${escapeHtml(q2)}</li>
+              <li style="margin-top: 10px;"><strong>Q3: Experienced unexpected deductions/margin erosion in last 12 months?</strong><br> ${escapeHtml(q3)}</li>
             </ul>
 
             <h3 style="color: #000; border-bottom: 1px solid #ddd; padding-bottom: 4px; margin-top: 24px;">Drafted Email Response (via Gemini)</h3>
