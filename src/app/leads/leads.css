@@ -1,4 +1,11 @@
 .leads-dashboard {
+  --spacing-md: 1.5rem;
+  --spacing-lg: 2rem;
+  --border-color: var(--border, rgba(198,198,205,0.3));
+  --border-strong: var(--outline-variant, #c6c6cd);
+  --bg-subtle: var(--bg-surface-low, #f2f4f6);
+  --bg-color: var(--bg-surface, #f7f9fb);
+
   max-width: 1200px;
   margin: 0 auto;
   padding: var(--spacing-lg);
