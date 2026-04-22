@@ -17,7 +17,11 @@ export default async function LocaleLayout({
 
   return (
     <>
-      <Navigation siteTitle={dictionary.siteTitle} currentLocale={locale} />
+      <Navigation
+        siteTitle={dictionary.siteTitle}
+        currentLocale={locale}
+        dictionary={dictionary}
+      />
       <main className="main-content">
         {children}
       </main>

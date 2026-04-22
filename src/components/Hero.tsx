@@ -1,42 +1,65 @@
-import Image from "next/image";
-import DynamicCTA from "./DynamicCTA";
+'use client';
+import { useState } from 'react';
+import Image from 'next/image';
+import AuditLeadForm from './AuditLeadForm';
 
-export default function Hero({ dictionary, locale }: { dictionary: any, locale: string }) {
+export default function Hero({ dictionary }: { dictionary: any }) {
+  const [formOpen, setFormOpen] = useState(false);
+  const h = dictionary.hero;
+
   return (
     <section className="hero-section">
-      <div className="hero-logo-lockup">
-        <Image
-          src="/logo-zeroleakai.webp"
-          alt={dictionary.siteTitle}
-          width={320}
-          height={320}
-          className="hero-logo"
-          priority
+      <div className="hero-grid">
+        {/* Left copy */}
+        <div style={{ position: 'relative', zIndex: 1 }}>
+          <span className="hero-badge">{h.badge}</span>
+          <h1 className="hero-h1">{h.h1}</h1>
+          <p className="hero-sub">{h.subH1}</p>
+          <div className="hero-btns">
+            <button
+              className="btn-primary"
+              id="hero-cta"
+              onClick={() => setFormOpen(true)}
+            >
+              {h.ctaPrimary}
+              <span>→</span>
+            </button>
+            <button className="btn-secondary">{h.ctaSecondary}</button>
+          </div>
+        </div>
+
+        {/* Right analytics card */}
+        <div className="hero-card">
+          <div className="hero-card-glow" />
+          <Image
+            src="/analytics-dashboard.jpg"
+            alt="Margin Analysis Dashboard"
+            width={480}
+            height={270}
+            className="hero-card-img"
+            style={{ display: 'block' }}
+          />
+          <div className="hero-card-stats">
+            <div>
+              <p className="hero-stat-label">{h.statRecoveryLabel}</p>
+              <p className="hero-stat-value-green">{h.statRecoveryValue}</p>
+            </div>
+            <div style={{ textAlign: 'right' }}>
+              <p className="hero-stat-label">{h.statLeakLabel}</p>
+              <p className="hero-stat-value-red">{h.statLeakValue}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {formOpen && (
+        <AuditLeadForm
+          locale=""
+          dictionary={dictionary}
+          onClose={() => setFormOpen(false)}
+          onSuccess={() => setFormOpen(false)}
         />
-      </div>
-
-      <div className="hero-content">
-        <h1 className="brutalist-h1">{dictionary.hero.h1}</h1>
-        <p className="brutalist-subh1">{dictionary.hero.subH1}</p>
-        <DynamicCTA ctaText={dictionary.cta} locale={locale} isHero={true} />
-      </div>
-
-      <div className="hero-stats">
-        <div className="hero-stat">
-          <span className="hero-stat-number">100%</span>
-          <span className="hero-stat-label">{dictionary.hero.stat1 ?? 'On-Premises'}</span>
-        </div>
-        <div className="hero-stat-divider" />
-        <div className="hero-stat">
-          <span className="hero-stat-number">0</span>
-          <span className="hero-stat-label">{dictionary.hero.stat2 ?? 'Data Leaks'}</span>
-        </div>
-        <div className="hero-stat-divider" />
-        <div className="hero-stat">
-          <span className="hero-stat-number">LFPDPPP</span>
-          <span className="hero-stat-label">{dictionary.hero.stat3 ?? 'Compliant by Design'}</span>
-        </div>
-      </div>
+      )}
     </section>
   );
 }

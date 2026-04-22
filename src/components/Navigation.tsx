@@ -1,21 +1,55 @@
-import Image from 'next/image';
+'use client';
+import { useState } from 'react';
 import LanguageSelector from './LanguageSelector';
+import AuditLeadForm from './AuditLeadForm';
 
 export default function Navigation({
   siteTitle,
-  currentLocale
+  currentLocale,
+  dictionary,
 }: {
   siteTitle: string;
   currentLocale: string;
+  dictionary: any;
 }) {
+  const [formOpen, setFormOpen] = useState(false);
+  const nav = dictionary.nav;
+
   return (
-    <nav className="main-nav">
-      <div className="nav-container">
-        <div className="logo">
-          <Image src="/favicon_io/android-chrome-192x192.png" alt={siteTitle} width={32} height={32} />
+    <>
+      <nav className="main-nav">
+        <div className="nav-container">
+          <a href="#" className="nav-wordmark">{siteTitle}</a>
+
+          <div className="nav-links">
+            <a href="#insights" className="nav-link">{nav.insights}</a>
+            <a href="#consultation" className="nav-link nav-link-active">{nav.partnerStrategy}</a>
+          </div>
+
+          <div className="nav-right">
+            <LanguageSelector currentLocale={currentLocale} />
+            <button
+              className="nav-cta-btn"
+              onClick={() => setFormOpen(true)}
+              id="nav-cta"
+            >
+              {nav.cta}
+            </button>
+            <div className="nav-hamburger">
+              <span style={{ fontSize: '1.5rem', cursor: 'pointer' }}>☰</span>
+            </div>
+          </div>
         </div>
-        <LanguageSelector currentLocale={currentLocale} />
-      </div>
-    </nav>
+      </nav>
+
+      {formOpen && (
+        <AuditLeadForm
+          locale={currentLocale}
+          dictionary={dictionary}
+          onClose={() => setFormOpen(false)}
+          onSuccess={() => setFormOpen(false)}
+        />
+      )}
+    </>
   );
 }

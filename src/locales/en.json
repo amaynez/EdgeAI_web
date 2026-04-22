@@ -1,19 +1,136 @@
 {
-  "siteTitle": "Zero Leak AI",
-  "hero": {
-    "h1": "INTELLIGENCE IS ALREADY INSIDE YOUR COMPANY.\nTHE ONLY QUESTION IS WHETHER YOU STILL CONTROL IT.",
-    "subH1": "Real automation, inside your network.\nZero data leakage.\nLFPDPPP compliance by design—not by policy.",
-    "stat1": "On-Premises",
-    "stat2": "Data Leaks",
-    "stat3": "Compliant by Design"
+  "siteTitle": "Zero Leak",
+  "meta": {
+    "title": "Zero Leak | Recover Your Margin",
+    "description": "Executive margin recovery consulting for retail brands selling to Amazon and Walmart. Recover 10–15% of lost margin through diagnostic audits and strategic recovery."
   },
-  "cta": "Get Started",
+  "nav": {
+    "insights": "Insights",
+    "partnerStrategy": "Partner Strategy",
+    "cta": "Book Audit"
+  },
+  "hero": {
+    "badge": "Executive Strategy",
+    "h1": "Recover the Margin You're Bleeding to the Algorithm.",
+    "subH1": "We help retail brands selling to Amazon and Walmart recover 10–15% of lost margin through diagnostic audits and strategic recovery.",
+    "ctaPrimary": "Book a Strategic Audit",
+    "ctaSecondary": "View Case Studies",
+    "statRecoveryLabel": "Recovery Potential",
+    "statRecoveryValue": "+15.4%",
+    "statLeakLabel": "Leak Detected",
+    "statLeakValue": "Net PPM Erosion"
+  },
   "problem": {
-    "title": "THIS IS NOT HYPOTHETICAL: IT’S SHADOW AI",
-    "description": "Your teams are already using public AI to move faster.\nContracts. Client data. Strategy.\n\nNo bad intent.\nJust pressure to deliver.\n\nBut every prompt leaving your network is direct exposure.\nNo control. No traceability.\n\nAnd in many cases, outside LFPDPPP compliance.\n\nThis isn’t a future risk.\nIt’s an active breach."
+    "badge": "The Problem",
+    "heading": "The Algorithm Is Not Your Partner.",
+    "body": "Retail algorithms like Amazon's Net PPM are designed for one purpose: to extract maximum value from suppliers. Your margin isn't just disappearing—it's being systematically engineered away through automated markdown allowances and invisible trade spend waste.",
+    "card1Title": "Markdown Allowance Leakage",
+    "card1Body": "Our data indicates that over 40% of markdown allowances are miscalculated or applied to products with high organic velocity, effectively subsidizing growth you already owned.",
+    "card1Footer": "Document_2 analysis",
+    "card2Title": "Trade Spend Waste",
+    "card2Body": "Systematic audits reveal that up to 22% of trade spend is lost to overlapping promotional windows and \"auto-matched\" pricing traps that trigger without human intervention.",
+    "card2Footer": "Document_4 findings",
+    "card3Title": "The Net PPM Trap",
+    "card3Body": "Retailer pricing engines prioritize their bottom line, triggering automatic price drops that force vendors into retroactive profit-protection claims they rarely win.",
+    "card3Footer": "Strategic Exposure"
   },
   "solution": {
-    "title": "DON’T BLOCK AI.\nRELOCATE IT.",
-    "description": "Air-Gapped AI infrastructure, running 100% inside your network.\n\nModels operating locally on your devices and servers.\nNo internet. No third parties. No data leakage.\n\nNo cloud dependency.\nNo exported risk.\n\nCompliance, control, and sovereignty… by architecture."
+    "badge": "Technological Foundation",
+    "heading": "Intelligence without Exposure.",
+    "body": "Most diagnostic tools require you to upload sensitive ERP data to the cloud, creating massive corporate risk. IA Cero Fuga is different.",
+    "feature1Title": "Air-Gapped Infrastructure",
+    "feature1Body": "The audit framework runs locally. Your data never leaves your environment.",
+    "feature2Title": "Algorithmic Forensics",
+    "feature2Body": "Identifies patterns of margin extraction that human auditors consistently miss.",
+    "feature3Title": "Verified Recovery Routes",
+    "feature3Body": "Outputs exact dispute documentation pre-formatted for Amazon and Walmart portals."
+  },
+  "expertise": {
+    "badge": "Our Founder",
+    "heading": "The 'God-View' Advantage.",
+    "body": "Our founder spent 17 years at the intersection of supply chain and digital commerce. From executive leadership at PMI to serving as an Amazon Category Leader, they've seen the retail machine from both sides.",
+    "quote": "\"In retail, what you don't measure is what the algorithm consumes. We give you back the visibility to defend your profit.\"",
+    "stat1Value": "17yr",
+    "stat1Label": "Industry Tenure",
+    "stat2Value": "PMI",
+    "stat2Label": "Supply Chain Leadership",
+    "stat3Value": "Amazon",
+    "stat3Label": "Category Authority"
+  },
+  "cta": {
+    "badge": "Strategic Engagement",
+    "heading": "Move Beyond Transactional Audits.",
+    "body": "Plug margin leaks with executive-level oversight. We don't just find discrepancies; we engineer a long-term defense strategy for your retail partnerships. Partner with a former Amazon Category Leader to protect your bottom line.",
+    "ctaPrimary": "Book a Strategic Audit",
+    "feature1Title": "Bespoke Analysis",
+    "feature1Body": "Every engagement is tailored to your specific ERP architecture and retailer agreement nuances.",
+    "feature2Title": "Lead-Score Intake",
+    "feature2Body": "Our diagnostic process begins with a comprehensive questionnaire to assess recovery potential before deployment.",
+    "feature3Title": "Executive Partnership",
+    "feature3Body": "Direct access to industry authorities who understand the algorithm's incentives."
+  },
+  "proof": {
+    "heading": "The Proof of Precision.",
+    "body": "While at Amazon, our leadership didn't just manage growth—they engineered efficiency.",
+    "statValue": "4% YoY",
+    "statLabel": "Margin improvement engineered within Amazon's largest categories.",
+    "bar1Label": "Typical Brand Leakage",
+    "bar1Value": "12.5%",
+    "bar2Label": "Post-Audit Recovery",
+    "bar2Value": "Zero Leak"
+  },
+  "footer": {
+    "tagline": "Precision consultancy for the algorithmic age. We plug the gaps that technology creates.",
+    "col1Title": "Practice",
+    "link1": "Services",
+    "link2": "Insights",
+    "link3": "Partner Strategy",
+    "col2Title": "Legal",
+    "link4": "Privacy",
+    "link5": "Contact",
+    "copyright": "Zero Leak. Executive Precision."
+  },
+  "form": {
+    "title": "Request Strategic Audit",
+    "name": "Full Name",
+    "email": "Professional Email",
+    "company": "Company / Brand",
+    "role": "Executive Role",
+    "linkedin": "LinkedIn Profile URL",
+    "linkedinPlaceholder": "https://linkedin.com/in/yourprofile",
+    "next": "Continue to Assessment",
+    "q1": "Which retailers do you currently sell to?",
+    "q1opts": [
+      { "value": "amazon", "label": "Amazon" },
+      { "value": "walmart", "label": "Walmart" },
+      { "value": "both", "label": "Both Amazon & Walmart" },
+      { "value": "other", "label": "Other large retailer" }
+    ],
+    "q2": "Approximately what % of your P&L do you attribute to trade spend and allowances?",
+    "q2opts": [
+      { "value": "under5", "label": "Less than 5%" },
+      { "value": "5to15", "label": "5–15%" },
+      { "value": "over15", "label": "Over 15%" },
+      { "value": "unsure", "label": "Not sure" }
+    ],
+    "q3": "Have you experienced unexpected deductions or margin erosion from retailer chargebacks in the last 12 months?",
+    "q3opts": [
+      { "value": "yes_significant", "label": "Yes, significantly" },
+      { "value": "somewhat", "label": "Somewhat" },
+      { "value": "no", "label": "No" },
+      { "value": "unsure", "label": "Not sure" }
+    ],
+    "submit": "Submit Audit Request",
+    "disclaimer": "All submitted information is protected under strict NDA. We never share your data with third parties.",
+    "step1": "1/2",
+    "step2": "2/2",
+    "emailError": "Please use a corporate email. Generic domains (gmail, yahoo, etc.) are restricted.",
+    "requiredError": "All fields are required.",
+    "invalidEmailError": "Please enter a valid email address.",
+    "invalidLinkedinError": "Please enter a valid LinkedIn profile URL.",
+    "fallbackTitle": "Professional Identity Verification",
+    "fallbackMsg": "We noticed you're using a generic email provider. While we prioritize verified corporate domains, independent professionals may proceed by providing their LinkedIn profile for manual review.",
+    "submitAnyway": "Verify & Continue",
+    "close": "Close"
   }
 }
