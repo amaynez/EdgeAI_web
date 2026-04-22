@@ -121,7 +121,7 @@ export default function LeadsTable({ initialLeads }: { initialLeads: any[] }) {
   return (
     <div>
       <div className="view-toggle-container">
-        <span className={`view-toggle-label ${!showUncontactedOnly ? 'active' : ''}`} onClick={() => setShowUncontactedOnly(false)}>All Leads</span>
+        <button type="button" className={`view-toggle-label ${!showUncontactedOnly ? 'active' : ''}`} onClick={() => setShowUncontactedOnly(false)}>All Leads</button>
         <label className="view-toggle-switch">
           <input
             type="checkbox"
@@ -131,7 +131,7 @@ export default function LeadsTable({ initialLeads }: { initialLeads: any[] }) {
           />
           <span className="view-toggle-slider"></span>
         </label>
-        <span className={`view-toggle-label ${showUncontactedOnly ? 'active' : ''}`} onClick={() => setShowUncontactedOnly(true)}>Uncontacted Only</span>
+        <button type="button" className={`view-toggle-label ${showUncontactedOnly ? 'active' : ''}`} onClick={() => setShowUncontactedOnly(true)}>Uncontacted Only</button>
       </div>
 
       {filteredLeads.length === 0 ? (
