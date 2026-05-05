@@ -42,9 +42,9 @@ test('sanitizeHtml: href attribute sanitization and canonicalization', () => {
 
 test('sanitizeHtml: edge cases and specific security checks', () => {
   // Null/Empty/Non-string
-  assert.strictEqual(sanitizeHtml(null as any), '');
+  assert.strictEqual(sanitizeHtml(null as unknown as string), '');
   assert.strictEqual(sanitizeHtml(''), '');
-  assert.strictEqual(sanitizeHtml(123 as any), '');
+  assert.strictEqual(sanitizeHtml(123 as unknown as string), '');
 
   // Malformed HTML
   assert.strictEqual(sanitizeHtml('<p>Unclosed'), '<p>Unclosed');
