@@ -1,6 +1,8 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from 'react';
+import parse from 'html-react-parser';
+import { sanitizeHtml } from '@/lib/sanitize';
 import { toggleContacted, fetchLeads } from './actions';
 
 export default function LeadsTable({ initialLeads }: { initialLeads: any[] }) {
@@ -258,7 +260,7 @@ export default function LeadsTable({ initialLeads }: { initialLeads: any[] }) {
                 ) : lead.processing_status?.startsWith('error') ? (
                   <span style={{ color: '#dc2626' }}>Error generating email: {lead.processing_status}</span>
                 ) : lead.qualification?.draftEmail ? (
-                  <div dangerouslySetInnerHTML={{ __html: lead.qualification.draftEmail }} />
+                  <div>{parse(sanitizeHtml(lead.qualification.draftEmail))}</div>
                 ) : (
                   'No draft generated.'
                 )}
