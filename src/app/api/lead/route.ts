@@ -154,6 +154,221 @@ function validateLeadPayload(data: Record<string, unknown>): string[] {
   return errors;
 }
 
+<<<<<<< refactor-centralize-lead-processing-14256157501301239990
+=======
+interface LeadData {
+  name: string;
+  email: string;
+  company: string;
+  role: string;
+  q1?: Q1Value | null;
+  q2?: Q2Value | null;
+  q3?: Q3Value | null;
+  linkedin?: string | null;
+}
+
+async function processLeadBackground(leadId: string, leadData: LeadData) {
+  const { name, email, company, role, q1, q2, q3, linkedin } = leadData;
+  let aiInsights = {
+    urgencyScore: 0,
+    potentialScore: 0,
+    analysis: 'AI Analysis Failed or Unavailable.',
+    draftEmail: 'Failed to generate draft email.',
+  };
+  let processingStatus = 'completed';
+
+  try {
+    // --- 1. Apollo.io Enrichment ---
+    let apolloDataStr = '';
+    const apolloApiKey = process.env.APOLLO_API_KEY;
+
+    if (apolloApiKey) {
+      try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 seconds timeout
+
+        const apolloRes = await fetch('https://api.apollo.io/v1/people/match', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Cache-Control': 'no-cache'
+          },
+          body: JSON.stringify({
+            api_key: apolloApiKey,
+            email: email,
+            linkedin_url: linkedin || undefined
+          }),
+          signal: controller.signal
+        });
+
+        clearTimeout(timeoutId);
+
+        if (apolloRes.ok) {
+          const apolloJson = await apolloRes.json();
+          const person = apolloJson.person || {};
+          const org = person.organization || {};
+
+          const compressedData = {
+            title: person.title,
+            seniority: person.seniority,
+            primary_phone: person.primary_phone,
+            estimated_num_employees: org.estimated_num_employees,
+            industry: org.industry,
+            technology_names: org.technology_names?.slice(0, 10) // Limit to top 10 to save tokens
+          };
+
+          apolloDataStr = `\nApollo.io Enrichment Data (for context):\n${JSON.stringify(compressedData, null, 2)}`;
+        } else {
+          console.warn('Apollo API error:', await apolloRes.text());
+        }
+      } catch (err: unknown) {
+        const errorName = err instanceof Error ? err.name : (typeof err === 'object' && err !== null && 'name' in err ? String(err.name) : 'Error');
+        if (errorName === 'AbortError') {
+          console.warn('Apollo API timeout exceeded');
+        } else {
+          console.error('Error fetching from Apollo:', err);
+        }
+      }
+    }
+
+    // --- 2. AI Qualification using Gemini ---
+    if (process.env.GEMINI_API_KEY) {
+      const model = genAI.getGenerativeModel({
+        model: 'gemini-flash-lite-latest',
+        systemInstruction: `You are an expert B2B Margin Recovery Consultant evaluator. Analyze this inbound lead for your consulting business. You must return ONLY a raw valid JSON object with the following schema, and no other text:
+{
+  "urgencyScore": (number 1-10, based on how urgently they need margin recovery/auditing based on answers and company context),
+  "potentialScore": (number 1-10, based on their role, company size potential, and retailer exposure),
+  "analysis": "1-2 sentence concise analysis of their margin leakage vulnerability and why they are a good lead",
+  "draftEmail": "A professional HTML-formatted reply draft to the lead addressing their specific pain points, proposing a brief introductory chat. Emphasize how you can help them specifically based on their answers. Sign it as 'Armando Maynez, Founder at Zero Leak'."
+}`
+      });
+
+      const prompt = `
+Lead Profile:
+- Name: ${name}
+- Role: ${role}
+- Company: ${company}
+${linkedin ? `- LinkedIn: ${linkedin}` : ''}
+${apolloDataStr}
+Assessment Answers:
+1. Retailers currently selling to? ${q1}
+2. % of P&L attributed to trade spend/allowances? ${q2}
+3. Experienced unexpected deductions/margin erosion in last 12 months? ${q3}
+      `;
+
+      const result = await model.generateContent(prompt);
+      const responseText = result.response.text().replace(/```json/gi, '').replace(/```/g, '').trim();
+
+      try {
+        const parsed = JSON.parse(responseText);
+        aiInsights = {
+          urgencyScore:  Number.isFinite(Number(parsed.urgencyScore))  ? Number(parsed.urgencyScore)  : 0,
+          potentialScore: Number.isFinite(Number(parsed.potentialScore)) ? Number(parsed.potentialScore) : 0,
+          analysis:  typeof parsed.analysis === 'string'  ? parsed.analysis  : 'AI Analysis Failed or Unavailable.',
+          draftEmail: sanitizeHtml(parsed.draftEmail ?? ''),
+        };
+      } catch (e) {
+        console.error('Failed to parse Gemini output as JSON:', responseText);
+        processingStatus = 'error: failed to parse Gemini output';
+      }
+    } else {
+      console.warn('GEMINI_API_KEY missing, skipping AI insights');
+      processingStatus = 'error: missing GEMINI_API_KEY';
+    }
+
+    // --- 3. Send via Email (Gmail SMTP) ---
+    const user = process.env.GMAIL_USER;
+    const pass = process.env.GMAIL_APP_PASSWORD;
+
+    if (user && pass) {
+      const transporter = nodemailer.createTransport({
+        service: 'gmail',
+        auth: {
+          user,
+          pass,
+        },
+      });
+
+      const mailOptions = {
+        from: user,
+        to: user, // Send to yourself
+        replyTo: email,
+        subject: `[Lead: ${aiInsights.potentialScore}/10] Strategic Audit Request: ${escapeHtml(company)}`,
+        html: `
+          <div style="font-family: sans-serif; max-width: 600px; margin: auto; padding: 20px; color: #333; line-height: 1.6;">
+            <h2 style="border-bottom: 2px solid #000; padding-bottom: 10px;">New Strategic Audit Lead Captured</h2>
+            
+            <div style="background-color: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 20px; border-left: 4px solid #007bff;">
+              <h3 style="margin-top: 0;">AI Qualification Insights</h3>
+              <p><strong>Urgency Score:</strong> 
+                <span style="background-color: ${aiInsights.urgencyScore >= 7 ? '#ffc107' : '#e9ecef'}; padding: 2px 8px; border-radius: 12px; font-weight: bold;">${aiInsights.urgencyScore}/10</span>
+              </p>
+              <p><strong>Potential Score:</strong>
+                <span style="background-color: ${aiInsights.potentialScore >= 7 ? '#28a745' : '#e9ecef'}; color: ${aiInsights.potentialScore >= 7 ? '#fff' : '#000'}; padding: 2px 8px; border-radius: 12px; font-weight: bold;">${aiInsights.potentialScore}/10</span>
+              </p>
+              <p><strong>Analysis:</strong> ${escapeHtml(aiInsights.analysis)}</p>
+            </div>
+
+            <h3 style="color: #000; border-bottom: 1px solid #ddd; padding-bottom: 4px;">Executive Contact Identity</h3>
+            <ul style="list-style-type: none; padding-left: 0;">
+              <li style="margin-bottom: 8px;"><strong>Name:</strong> ${escapeHtml(name)}</li>
+              <li style="margin-bottom: 8px;"><strong>Role:</strong> ${escapeHtml(role)}</li>
+              <li style="margin-bottom: 8px;"><strong>Company:</strong> ${escapeHtml(company)}</li>
+              <li style="margin-bottom: 8px;"><strong>Email:</strong> <a href="mailto:${encodeURIComponent(email)}" style="color: #007bff; text-decoration: none;">${escapeHtml(email)}</a></li>
+              ${linkedin ? `<li style="margin-bottom: 8px;"><strong>LinkedIn:</strong> <a href="${escapeHtml(linkedin)}" target="_blank" rel="noopener noreferrer" style="color: #007bff; text-decoration: none;">${escapeHtml(linkedin)}</a></li>` : ''}
+            </ul>
+
+            <h3 style="color: #000; border-bottom: 1px solid #ddd; padding-bottom: 4px; margin-top: 24px;">Vulnerability Assessment Answers</h3>
+            <ul style="padding-left: 20px;">
+              <li><strong>Q1: Retailers currently selling to?</strong><br> ${escapeHtml(q1)}</li>
+              <li style="margin-top: 10px;"><strong>Q2: % of P&L attributed to trade spend/allowances?</strong><br> ${escapeHtml(q2)}</li>
+              <li style="margin-top: 10px;"><strong>Q3: Experienced unexpected deductions/margin erosion in last 12 months?</strong><br> ${escapeHtml(q3)}</li>
+            </ul>
+
+            <h3 style="color: #000; border-bottom: 1px solid #ddd; padding-bottom: 4px; margin-top: 24px;">Drafted Email Response (via Gemini)</h3>
+            <div style="background-color: #fff; border: 1px solid #ddd; padding: 15px; border-radius: 8px; font-family: sans-serif; white-space: pre-wrap;">${aiInsights.draftEmail}</div>
+            
+            <p style="font-size: 0.9em; color: #666; margin-top: 20px;"><em>You can just click 'Reply' on this email to reply back directly to ${escapeHtml(name)}! Just copy formatting from the drafted response.</em></p>
+          </div>
+        `,
+      };
+
+      await transporter.sendMail(mailOptions);
+    } else {
+      console.warn('GMAIL_USER or GMAIL_APP_PASSWORD missing. Skipping email.');
+    }
+  } catch (globalErr: unknown) {
+    console.error('Error in background processing:', globalErr);
+    const errorMessage = globalErr instanceof Error ? globalErr.message : (typeof globalErr === 'object' && globalErr !== null && 'message' in globalErr ? String(globalErr.message) : 'Unknown error');
+    processingStatus = `error: ${errorMessage}`;
+  } finally {
+    // --- 4. Update Database with Retry Logic ---
+    let retries = 3;
+    let delay = 1000;
+
+    while (retries > 0) {
+      try {
+        await pool.query(
+          `UPDATE leads SET qualification = $1, processing_status = $2 WHERE id = $3`,
+          [JSON.stringify(aiInsights), processingStatus, leadId]
+        );
+        break; // Success
+      } catch (dbErr) {
+        console.error(`Failed to update lead (Attempt ${4 - retries}/3):`, dbErr);
+        retries -= 1;
+        if (retries === 0) {
+          console.error(`FATAL: Could not persist AI insights for lead ${leadId} after 3 attempts. Payload:`, { aiInsights, processingStatus });
+          // In a production system, you would enqueue this to a dead-letter queue or persistent store here.
+        } else {
+          await new Promise(res => setTimeout(res, delay));
+          delay *= 2; // Exponential backoff
+        }
+      }
+    }
+  }
+}
+>>>>>>> main
 
 export async function POST(request: Request) {
   try {
@@ -217,7 +432,7 @@ export async function POST(request: Request) {
 
     // Return immediate success
     return NextResponse.json({ success: true, message: 'Lead captured successfully and processing in background' }, { status: 200 });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('API /lead error:', error);
     return NextResponse.json({ error: 'Failed to process lead request' }, { status: 500 });
   }

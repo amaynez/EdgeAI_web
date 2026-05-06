@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { pool } from '@/lib/db';
 import { processLeadBackground } from '@/lib/leadProcessing';
+import { secureCompare } from './auth';
 
 export const dynamic = 'force-dynamic';
 
@@ -10,11 +11,13 @@ export async function GET(request: Request) {
   const authHeader = request.headers.get('authorization');
 
   if (!process.env.CRON_SECRET) {
-      return new NextResponse('Server misconfiguration: CRON_SECRET not set', { status: 500 });
+    return new NextResponse('Server misconfiguration: CRON_SECRET not set', { status: 500 });
   }
 
-  if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
-      return new NextResponse('Unauthorized', { status: 401 });
+  const expectedAuth = `Bearer ${process.env.CRON_SECRET}`;
+
+  if (!authHeader || !secureCompare(authHeader, expectedAuth)) {
+    return new NextResponse('Unauthorized', { status: 401 });
   }
 
   try {
@@ -61,7 +64,7 @@ export async function GET(request: Request) {
     await Promise.all(promises);
 
     return NextResponse.json({ success: true, processed: rows.length });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Cron process-leads error:', error);
     return NextResponse.json({ error: 'Failed to process leads via cron' }, { status: 500 });
   }
