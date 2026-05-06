@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { pool } from '@/lib/db';
 import { processLeadBackground } from '@/lib/leadProcessing';
-import { timingSafeEqual, createHash } from 'node:crypto';
+import { secureCompare } from './auth';
 
 export const dynamic = 'force-dynamic';
 
@@ -15,13 +15,6 @@ export async function GET(request: Request) {
   }
 
   const expectedAuth = `Bearer ${process.env.CRON_SECRET}`;
-
-  // Use constant-time comparison to prevent timing attacks
-  const secureCompare = (a: string, b: string) => {
-    const hashA = createHash('sha256').update(a).digest();
-    const hashB = createHash('sha256').update(b).digest();
-    return timingSafeEqual(hashA, hashB);
-  };
 
   if (!authHeader || !secureCompare(authHeader, expectedAuth)) {
     return new NextResponse('Unauthorized', { status: 401 });
