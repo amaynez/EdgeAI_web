@@ -35,7 +35,7 @@ const ALLOWED_HREF_SCHEMES = new Set(['http', 'https', 'mailto', 'tel']);
  * Steps: decode HTML entities → strip control chars/nulls → URL-decode → lowercase.
  * Returns the scheme (e.g. "javascript") or an empty string for relative URLs.
  */
-function canonicalizeHref(raw: string): { safe: boolean; canonical: string } {
+function canonicalizeHref(raw: string): { safe: boolean; canonical: string; preserved: string } {
   // 1. Decode common HTML entities
   let s = raw
     .replace(/&amp;/gi, '&')
@@ -52,6 +52,7 @@ function canonicalizeHref(raw: string): { safe: boolean; canonical: string } {
 
   // 3. Collapse repeated whitespace/control sequences and trim
   s = s.trim();
+  const preserved = s;
 
   // 4. URL-decode percent-encodings (best-effort; ignore malformed)
   try { s = decodeURIComponent(s); } catch { /* leave as-is */ }
@@ -63,12 +64,12 @@ function canonicalizeHref(raw: string): { safe: boolean; canonical: string } {
   const schemeMatch = canonical.match(/^([a-z][a-z0-9+\-.]*):/);
   if (!schemeMatch) {
     // Relative URL or anchor — safe if it also passes the regex fallback
-    return { safe: !UNSAFE_HREF_RE.test(canonical), canonical };
+    return { safe: !UNSAFE_HREF_RE.test(canonical), canonical, preserved };
   }
 
   const scheme = schemeMatch[1];
   const safe = ALLOWED_HREF_SCHEMES.has(scheme) && !UNSAFE_HREF_RE.test(canonical);
-  return { safe, canonical };
+  return { safe, canonical, preserved };
 }
 
 /**
@@ -111,12 +112,12 @@ function sanitizeTag(tagStr: string): string {
     if (!allowedForTag.has(attrName)) continue;
 
     // Extra check: href must pass canonicalization + scheme allowlist.
-    // Use the canonical (decoded, normalized) value in the output so that
-    // encoded/obfuscated variants cannot sneak through.
+    // Use the preserved (normalized but original cased) value in the output so that
+    // encoded/obfuscated variants cannot sneak through while preserving valid cased URLs.
     if (attrName === 'href') {
-      const { safe, canonical } = canonicalizeHref(attrValue);
+      const { safe, preserved } = canonicalizeHref(attrValue);
       if (!safe) continue;
-      safeAttrs.push(`${attrName}="${canonical.replace(/"/g, '&quot;')}"`);
+      safeAttrs.push(`${attrName}="${preserved.replace(/"/g, '&quot;')}"`);
       continue;
     }
 
