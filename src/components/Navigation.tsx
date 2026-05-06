@@ -18,6 +18,7 @@ export default function Navigation({
   const [formOpen, setFormOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [activeSection, setActiveSection] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const menuRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
 
@@ -155,8 +156,18 @@ export default function Navigation({
         <AuditLeadForm
           formCopy={formCopy}
           onClose={() => setFormOpen(false)}
-          onSuccess={() => setFormOpen(false)}
+          onSuccess={(msg) => {
+            setFormOpen(false);
+            setSuccessMessage(msg);
+            setTimeout(() => setSuccessMessage(null), 5000);
+          }}
         />
+      )}
+
+      {successMessage && (
+        <div className="toast-notification">
+          {successMessage}
+        </div>
       )}
     </>
   );
