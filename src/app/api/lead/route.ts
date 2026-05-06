@@ -1,12 +1,7 @@
 import { NextResponse } from 'next/server';
 import { waitUntil } from '@vercel/functions';
-import nodemailer from 'nodemailer';
-import { GoogleGenerativeAI } from '@google/generative-ai';
 import { pool, ensureLeadsTable } from '@/lib/db';
-import { sanitizeHtml } from '@/lib/sanitize';
-
-// Initialize Gemini
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
+import { processLeadBackground, LeadData } from '@/lib/leadProcessing';
 
 // ---------------------------------------------------------------------------
 // Cached DB table initializer — avoids a CREATE TABLE round-trip on every
@@ -76,17 +71,6 @@ type Q1Value = typeof Q1_VALUES[number];
 type Q2Value = typeof Q2_VALUES[number];
 type Q3Value = typeof Q3_VALUES[number];
 
-// ---------------------------------------------------------------------------
-// HTML-escape helper — prevents XSS when interpolating user data into email HTML.
-// ---------------------------------------------------------------------------
-function escapeHtml(value: string | undefined | null): string {
-  return String(value ?? '')
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#x27;');
-}
 
 function validateLeadPayload(data: Record<string, unknown>): string[] {
   const errors: string[] = [];
@@ -170,6 +154,8 @@ function validateLeadPayload(data: Record<string, unknown>): string[] {
   return errors;
 }
 
+<<<<<<< refactor-centralize-lead-processing-14256157501301239990
+=======
 interface LeadData {
   name: string;
   email: string;
@@ -382,6 +368,7 @@ Assessment Answers:
     }
   }
 }
+>>>>>>> main
 
 export async function POST(request: Request) {
   try {
