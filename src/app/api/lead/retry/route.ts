@@ -49,7 +49,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ success: true, message: 'Retry initiated' });
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('API /lead/retry error:', error);
     return NextResponse.json({ error: 'Failed to initiate retry' }, { status: 500 });
   }

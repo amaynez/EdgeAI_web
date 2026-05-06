@@ -64,7 +64,7 @@ export async function GET(request: Request) {
     await Promise.all(promises);
 
     return NextResponse.json({ success: true, processed: rows.length });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Cron process-leads error:', error);
     return NextResponse.json({ error: 'Failed to process leads via cron' }, { status: 500 });
   }
