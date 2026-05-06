@@ -13,7 +13,7 @@ export default async function LeadsPage() {
   const session = await getServerSession(authOptions);
   const userEmail = session?.user?.email;
 
-  if (!session || (userEmail ?? '').trim().toLowerCase() !== ADMIN_EMAIL.trim().toLowerCase()) {
+  if (!session || userEmail !== ADMIN_EMAIL) {
     redirect('/api/auth/signin?callbackUrl=/leads');
   }
 

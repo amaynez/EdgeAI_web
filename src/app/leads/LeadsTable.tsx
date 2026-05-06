@@ -1,8 +1,6 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from 'react';
-import parse from 'html-react-parser';
-import { sanitizeHtml } from '@/lib/sanitize';
 import { toggleContacted, fetchLeads } from './actions';
 
 export default function LeadsTable({ initialLeads }: { initialLeads: any[] }) {
@@ -48,15 +46,14 @@ export default function LeadsTable({ initialLeads }: { initialLeads: any[] }) {
 
   const handleCopy = async (id: string, draftEmailHTML: string) => {
     try {
-      const sanitizedHTML = sanitizeHtml(draftEmailHTML);
       const plainTextDiv = document.createElement("div");
-      plainTextDiv.innerHTML = sanitizedHTML;
+      plainTextDiv.innerHTML = draftEmailHTML;
       const plainText = plainTextDiv.innerText;
 
       // Copying as HTML allows pasting with bold/styles preserved in Gmail
       await navigator.clipboard.write([
         new ClipboardItem({
-          "text/html": new Blob([sanitizedHTML], { type: "text/html" }),
+          "text/html": new Blob([draftEmailHTML], { type: "text/html" }),
           "text/plain": new Blob([plainText], { type: "text/plain" }),
         })
       ]);
@@ -66,9 +63,8 @@ export default function LeadsTable({ initialLeads }: { initialLeads: any[] }) {
       console.error('Failed to copy. Trying fallback to plain text...', err);
       // Fallback for browsers that don't support ClipboardItem (like some versions of Firefox)
       try {
-        const sanitizedHTML = sanitizeHtml(draftEmailHTML);
         const plainTextDiv = document.createElement("div");
-        plainTextDiv.innerHTML = sanitizedHTML;
+        plainTextDiv.innerHTML = draftEmailHTML;
         await navigator.clipboard.writeText(plainTextDiv.innerText);
         setCopiedId(id);
         setTimeout(() => setCopiedId(null), 2500);
@@ -262,7 +258,7 @@ export default function LeadsTable({ initialLeads }: { initialLeads: any[] }) {
                 ) : lead.processing_status?.startsWith('error') ? (
                   <span style={{ color: '#dc2626' }}>Error generating email: {lead.processing_status}</span>
                 ) : lead.qualification?.draftEmail ? (
-                  <div>{parse(sanitizeHtml(lead.qualification.draftEmail))}</div>
+                  <div dangerouslySetInnerHTML={{ __html: lead.qualification.draftEmail }} />
                 ) : (
                   'No draft generated.'
                 )}

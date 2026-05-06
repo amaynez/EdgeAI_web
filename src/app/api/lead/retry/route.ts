@@ -2,19 +2,9 @@ import { NextResponse } from 'next/server';
 import { pool } from '@/lib/db';
 import { processLeadBackground } from '@/lib/leadProcessing';
 import { waitUntil } from '@vercel/functions';
-import { getServerSession } from "next-auth/next";
-import { authOptions } from "@/app/api/auth/[...nextauth]/route";
-import { ADMIN_EMAIL } from "@/lib/config";
 
 export async function POST(request: Request) {
   try {
-    const session = await getServerSession(authOptions);
-    const userEmail = session?.user?.email;
-
-    if (!session || (userEmail ?? '').trim().toLowerCase() !== ADMIN_EMAIL.trim().toLowerCase()) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
     const { leadId } = await request.json();
 
     if (!leadId) {
@@ -59,7 +49,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ success: true, message: 'Retry initiated' });
 
-  } catch (error: unknown) {
+  } catch (error: any) {
     console.error('API /lead/retry error:', error);
     return NextResponse.json({ error: 'Failed to initiate retry' }, { status: 500 });
   }

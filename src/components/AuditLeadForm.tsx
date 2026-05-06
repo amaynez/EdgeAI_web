@@ -66,7 +66,7 @@ export default function AuditLeadForm({ formCopy, onClose, onSuccess, onError }:
       const successMsg = dict.successMessage;
       if (onSuccess) onSuccess(successMsg);
       else { alert(successMsg); if (onClose) onClose(); }
-    } catch (err: unknown) {
+    } catch (err: any) {
       const errMsg = dict.genericError;
       setError(errMsg);
       if (onError) onError(errMsg);
