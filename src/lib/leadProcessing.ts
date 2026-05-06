@@ -56,7 +56,7 @@ export async function processLeadBackground(leadId: string, leadData: LeadData) 
           }
         }
       }
-    } catch (err: unknown) {
+    } catch (err: any) {
       console.error('Error fetching existing lead data:', err);
     }
 
@@ -110,10 +110,9 @@ export async function processLeadBackground(leadId: string, leadData: LeadData) 
           console.warn('Apollo API error:', await apolloRes.text());
           apolloFailed = true;
         }
-      } catch (err: unknown) {
+      } catch (err: any) {
         apolloFailed = true;
-        const errorName = err instanceof Error ? err.name : (typeof err === 'object' && err !== null && 'name' in err ? String(err.name) : 'Error');
-        if (errorName === 'AbortError') {
+        if (err.name === 'AbortError') {
           console.warn('Apollo API timeout exceeded');
         } else {
           console.error('Error fetching from Apollo:', err);
@@ -166,15 +165,15 @@ Assessment Answers:
             analysis:  typeof parsed.analysis === 'string'  ? parsed.analysis  : 'AI Analysis Failed or Unavailable.',
             draftEmail: sanitizeHtml(parsed.draftEmail ?? ''),
           };
-        } catch (e: unknown) {
-          console.error('Failed to parse Gemini output as JSON:', responseText, e);
+        } catch (e: any) {
+          console.error('Failed to parse Gemini output as JSON:', responseText);
           geminiFailed = true;
           geminiError = 'failed to parse Gemini output';
         }
-      } catch (e: unknown) {
+      } catch (e: any) {
          console.error('Failed to generate Gemini content:', e);
          geminiFailed = true;
-         geminiError = e instanceof Error ? e.message : (typeof e === 'object' && e !== null && 'message' in e ? String(e.message) : 'Gemini API call failed');
+         geminiError = e.message || 'Gemini API call failed';
       }
 
     } else {
@@ -279,7 +278,7 @@ Assessment Answers:
            );
         }
         break; // Success
-      } catch (dbErr: unknown) {
+      } catch (dbErr: any) {
         console.error(`Failed to update lead (Attempt ${4 - retries}/3):`, dbErr);
         retries -= 1;
         if (retries === 0) {
@@ -291,17 +290,16 @@ Assessment Answers:
         }
       }
     }
-  } catch (globalErr: unknown) {
+  } catch (globalErr: any) {
     console.error('Error in background processing:', globalErr);
 
     // Fatal error update
     try {
-      const errorMessage = globalErr instanceof Error ? globalErr.message : (typeof globalErr === 'object' && globalErr !== null && 'message' in globalErr ? String(globalErr.message) : 'Unknown error');
       await pool.query(
          `UPDATE leads SET processing_status = $1 WHERE id = $2`,
-         [`error: ${errorMessage}`, leadId]
+         [`error: ${globalErr.message}`, leadId]
       );
-    } catch (e: unknown) {
+    } catch (e: any) {
       console.error('Failed to write fatal error to DB', e);
     }
   }
