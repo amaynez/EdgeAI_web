@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { pool } from '@/lib/db';
 import { processLeadBackground } from '@/lib/leadProcessing';
+import { timingSafeEqual, createHash } from 'node:crypto';
 
 export const dynamic = 'force-dynamic';
 
@@ -10,11 +11,20 @@ export async function GET(request: Request) {
   const authHeader = request.headers.get('authorization');
 
   if (!process.env.CRON_SECRET) {
-      return new NextResponse('Server misconfiguration: CRON_SECRET not set', { status: 500 });
+    return new NextResponse('Server misconfiguration: CRON_SECRET not set', { status: 500 });
   }
 
-  if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
-      return new NextResponse('Unauthorized', { status: 401 });
+  const expectedAuth = `Bearer ${process.env.CRON_SECRET}`;
+
+  // Use constant-time comparison to prevent timing attacks
+  const secureCompare = (a: string, b: string) => {
+    const hashA = createHash('sha256').update(a).digest();
+    const hashB = createHash('sha256').update(b).digest();
+    return timingSafeEqual(hashA, hashB);
+  };
+
+  if (!authHeader || !secureCompare(authHeader, expectedAuth)) {
+    return new NextResponse('Unauthorized', { status: 401 });
   }
 
   try {
