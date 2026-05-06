@@ -235,8 +235,9 @@ async function processLeadBackground(leadId: string, leadData: LeadData) {
         } else {
           console.warn('Apollo API error:', await apolloRes.text());
         }
-      } catch (err: any) {
-        if (err.name === 'AbortError') {
+      } catch (err: unknown) {
+        const errorName = err instanceof Error ? err.name : (typeof err === 'object' && err !== null && 'name' in err ? String(err.name) : 'Error');
+        if (errorName === 'AbortError') {
           console.warn('Apollo API timeout exceeded');
         } else {
           console.error('Error fetching from Apollo:', err);
@@ -351,9 +352,10 @@ Assessment Answers:
     } else {
       console.warn('GMAIL_USER or GMAIL_APP_PASSWORD missing. Skipping email.');
     }
-  } catch (globalErr: any) {
+  } catch (globalErr: unknown) {
     console.error('Error in background processing:', globalErr);
-    processingStatus = `error: ${globalErr.message}`;
+    const errorMessage = globalErr instanceof Error ? globalErr.message : (typeof globalErr === 'object' && globalErr !== null && 'message' in globalErr ? String(globalErr.message) : 'Unknown error');
+    processingStatus = `error: ${errorMessage}`;
   } finally {
     // --- 4. Update Database with Retry Logic ---
     let retries = 3;
@@ -443,7 +445,7 @@ export async function POST(request: Request) {
 
     // Return immediate success
     return NextResponse.json({ success: true, message: 'Lead captured successfully and processing in background' }, { status: 200 });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('API /lead error:', error);
     return NextResponse.json({ error: 'Failed to process lead request' }, { status: 500 });
   }
