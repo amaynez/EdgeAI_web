@@ -11,7 +11,7 @@ export async function POST(request: Request) {
     const session = await getServerSession(authOptions);
     const userEmail = session?.user?.email;
 
-    if (!session || userEmail !== ADMIN_EMAIL) {
+    if (!session || (userEmail ?? '').trim().toLowerCase() !== ADMIN_EMAIL.trim().toLowerCase()) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
