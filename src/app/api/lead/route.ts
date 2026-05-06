@@ -41,15 +41,21 @@ function isRateLimited(ip: string): boolean {
   const now = Date.now();
 
   // Prune stale entries to prevent unbounded Map growth.
+  // Map maintains insertion order; since we refresh entries upon expiration,
+  // stale entries are always at the beginning of the Map.
   for (const [key, rec] of rateLimitStore) {
     if (now - rec.windowStart > RATE_LIMIT_WINDOW_MS) {
       rateLimitStore.delete(key);
+    } else {
+      break; // Stop at the first non-stale entry
     }
   }
 
   const entry = rateLimitStore.get(ip);
 
   if (!entry || now - entry.windowStart > RATE_LIMIT_WINDOW_MS) {
+    // Refresh insertion order by deleting and re-setting
+    rateLimitStore.delete(ip);
     rateLimitStore.set(ip, { count: 1, windowStart: now });
     return false;
   }
