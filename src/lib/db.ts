@@ -58,6 +58,15 @@ export async function ensureLeadsTable(): Promise<void> {
       console.warn('Failed to add processing_status column to leads table:', err);
     }
   }
+
+  // Add email_sent_at column
+  try {
+    await pool.query(`ALTER TABLE leads ADD COLUMN email_sent_at TIMESTAMPTZ`);
+  } catch (err: any) {
+    if (err.code !== '42701') {
+      console.warn('Failed to add email_sent_at column to leads table:', err);
+    }
+  }
 }
 
 export { pool };

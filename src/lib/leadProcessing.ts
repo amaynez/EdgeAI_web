@@ -26,7 +26,42 @@ function escapeHtml(value: string | undefined | null): string {
     .replace(/'/g, '&#x27;');
 }
 
-export async function processLeadBackground(leadId: string, leadData: LeadData) {
+export interface LeadUpdateResult {
+  leadId: string;
+  aiInsights: any;
+  processingStatus: string;
+  apolloData: any;
+  emailSentSuccessfully: boolean;
+}
+
+export async function updateLead(res: LeadUpdateResult) {
+  const { leadId, aiInsights, processingStatus, apolloData, emailSentSuccessfully } = res;
+
+  if (apolloData) {
+     await pool.query(
+       `UPDATE leads SET qualification = $1, processing_status = $2, apollo_data = $3${emailSentSuccessfully ? ', email_sent_at = NOW()' : ''} WHERE id = $4`,
+       [JSON.stringify(aiInsights), processingStatus, JSON.stringify(apolloData), leadId]
+     );
+  } else {
+     await pool.query(
+       `UPDATE leads SET qualification = $1, processing_status = $2${emailSentSuccessfully ? ', email_sent_at = NOW()' : ''} WHERE id = $3`,
+       [JSON.stringify(aiInsights), processingStatus, leadId]
+     );
+  }
+}
+
+export async function processLeadBackground(
+  leadId: string,
+  leadData: LeadData,
+  options: {
+    existingData?: {
+      apollo_data?: any;
+      email_sent_at?: Date | null;
+      contacted?: boolean;
+    };
+    skipUpdate?: boolean;
+  } = {}
+): Promise<LeadUpdateResult | void> {
   const { name, email, company, role, q1, q2, q3, linkedin } = leadData;
   let aiInsights = {
     urgencyScore: 0,
@@ -41,23 +76,37 @@ export async function processLeadBackground(leadId: string, leadData: LeadData) 
     // --- 0. Check if existing apollo_data exists (e.g. from a prior run) ---
     let existingApolloDataStr = null;
     let emailAlreadySent = false;
-    try {
-      const { rows } = await pool.query(`SELECT apollo_data, email_sent_at, contacted FROM leads WHERE id = $1`, [leadId]);
-      if (rows.length > 0) {
-        if (rows[0].email_sent_at || rows[0].contacted) {
-            emailAlreadySent = true;
-        }
 
-        if (rows[0].apollo_data && rows[0].apollo_data.raw_data) {
-          // Build the string from the saved data to avoid recalling Apollo
-          const data = rows[0].apollo_data.compressed_data;
-          if (data) {
-            existingApolloDataStr = `\nApollo.io Enrichment Data (for context):\n${JSON.stringify(data, null, 2)}`;
-          }
+    if (options.existingData) {
+      const { apollo_data, email_sent_at, contacted } = options.existingData;
+      if (email_sent_at || contacted) {
+        emailAlreadySent = true;
+      }
+      if (apollo_data && apollo_data.raw_data) {
+        const data = apollo_data.compressed_data;
+        if (data) {
+          existingApolloDataStr = `\nApollo.io Enrichment Data (for context):\n${JSON.stringify(data, null, 2)}`;
         }
       }
-    } catch (err: any) {
-      console.error('Error fetching existing lead data:', err);
+    } else {
+      try {
+        const { rows } = await pool.query(`SELECT apollo_data, email_sent_at, contacted FROM leads WHERE id = $1`, [leadId]);
+        if (rows.length > 0) {
+          if (rows[0].email_sent_at || rows[0].contacted) {
+              emailAlreadySent = true;
+          }
+
+          if (rows[0].apollo_data && rows[0].apollo_data.raw_data) {
+            // Build the string from the saved data to avoid recalling Apollo
+            const data = rows[0].apollo_data.compressed_data;
+            if (data) {
+              existingApolloDataStr = `\nApollo.io Enrichment Data (for context):\n${JSON.stringify(data, null, 2)}`;
+            }
+          }
+        }
+      } catch (err: any) {
+        console.error('Error fetching existing lead data:', err);
+      }
     }
 
     // --- 1. Apollo.io Enrichment ---
@@ -260,23 +309,27 @@ Assessment Answers:
       }
     }
 
+    const result: LeadUpdateResult = {
+      leadId,
+      aiInsights,
+      processingStatus,
+      apolloData: (apolloRawData && apolloCompressedData && !existingApolloDataStr)
+        ? { raw_data: apolloRawData, compressed_data: apolloCompressedData }
+        : null,
+      emailSentSuccessfully
+    };
+
+    if (options.skipUpdate) {
+      return result;
+    }
+
     // --- 4. Update Database with Retry Logic ---
     let retries = 3;
     let delay = 1000;
 
     while (retries > 0) {
       try {
-        if (apolloRawData && apolloCompressedData && !existingApolloDataStr) {
-           await pool.query(
-             `UPDATE leads SET qualification = $1, processing_status = $2, apollo_data = $3${emailSentSuccessfully ? ', email_sent_at = NOW()' : ''} WHERE id = $4`,
-             [JSON.stringify(aiInsights), processingStatus, JSON.stringify({ raw_data: apolloRawData, compressed_data: apolloCompressedData }), leadId]
-           );
-        } else {
-           await pool.query(
-             `UPDATE leads SET qualification = $1, processing_status = $2${emailSentSuccessfully ? ', email_sent_at = NOW()' : ''} WHERE id = $3`,
-             [JSON.stringify(aiInsights), processingStatus, leadId]
-           );
-        }
+        await updateLead(result);
         break; // Success
       } catch (dbErr: any) {
         console.error(`Failed to update lead (Attempt ${4 - retries}/3):`, dbErr);
@@ -292,6 +345,10 @@ Assessment Answers:
     }
   } catch (globalErr: any) {
     console.error('Error in background processing:', globalErr);
+
+    if (options.skipUpdate) {
+      throw globalErr;
+    }
 
     // Fatal error update
     try {
