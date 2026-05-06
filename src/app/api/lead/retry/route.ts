@@ -45,7 +45,11 @@ export async function POST(request: Request) {
         return NextResponse.json({ error: 'Lead is already being processed' }, { status: 409 });
     }
 
-    waitUntil(processLeadBackground(leadId, leadData));
+    // Use existing persona if it can be determined, default to AI_CONSULTANT
+    // For now, retry logic uses default AI_CONSULTANT as it doesn't store the persona.
+    // However, looking at the main lead route, it uses MARGIN_RECOVERY.
+    // Given the duplication, the background processor now handles both based on the options.
+    waitUntil(processLeadBackground(leadId, leadData, { persona: 'MARGIN_RECOVERY' }));
 
     return NextResponse.json({ success: true, message: 'Retry initiated' });
 
