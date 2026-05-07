@@ -76,6 +76,9 @@ function canonicalizeHref(raw: string): { safe: boolean; canonical: string } {
  * Returns the sanitized tag string, or '' to remove the tag.
  */
 function sanitizeTag(tagStr: string): string {
+  // If the tag is unclosed (e.g. at the end of input), strip it for safety.
+  if (!tagStr.endsWith('>')) return '';
+
   // Extract tag name (handles closing tags like </p>)
   const isClosing = tagStr.startsWith('</');
   const inner = tagStr.slice(isClosing ? 2 : 1, -1).trim();
@@ -139,17 +142,17 @@ function sanitizeTag(tagStr: string): string {
 export function sanitizeHtml(html: string): string {
   if (!html || typeof html !== 'string') return '';
 
-  // 1. Remove HTML comments (<!-- ... -->)
-  let output = html.replace(/<!--[\s\S]*?-->/g, '');
+  // 1. Remove HTML comments (<!-- ... --> or unclosed <!-- ...)
+  let output = html.replace(/<!--[\s\S]*?(?:-->|$)/g, '');
 
   // 2. Remove <script>, <style>, <object>, <iframe>, <embed> blocks and their content
   output = output.replace(
-    /<(script|style|object|iframe|embed|link|meta|base|form|input|button|textarea|select)[\s\S]*?<\/\1>/gi,
+    /<(script|style|object|iframe|embed|link|meta|base|form|input|button|textarea|select)[\s\S]*?(?:<\/\1>|$)/gi,
     ''
   );
-  // Also strip self-closing dangerous tags
+  // Also strip potentially unclosed dangerous tags
   output = output.replace(
-    /<(script|style|object|iframe|embed|link|meta|base|form|input|button|textarea|select)[^>]*\/?>/gi,
+    /<(script|style|object|iframe|embed|link|meta|base|form|input|button|textarea|select)(?:[^>]*?(?:>|$))/gi,
     ''
   );
 
@@ -157,7 +160,10 @@ export function sanitizeHtml(html: string): string {
   output = output.replace(/\s+on\w+\s*=\s*(?:"[^"]*"|'[^']*'|[^\s>]*)/gi, '');
 
   // 4. Process remaining tags through the allow-list sanitizer
-  output = output.replace(/<\/?[\w][\s\S]*?>/g, (tag) => sanitizeTag(tag));
+  // Improved regex to handle attributes with '>' by matching quoted strings.
+  // Also matches unclosed tags at the end of the string to ensure they are processed/stripped.
+  const tagRe = /<\/?[\w-]+(?:\s+[\w-]+(?:\s*=\s*(?:"[^"]*"|'[^']*'|[^\s>]+))?)*\s*(\/?>|$)/g;
+  output = output.replace(tagRe, (tag) => sanitizeTag(tag));
 
   return output;
 }
