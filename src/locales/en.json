@@ -171,7 +171,7 @@
     "fallbackMsg": "We noticed you're using a generic email provider. While we prioritize verified corporate domains, independent professionals may proceed by providing their LinkedIn profile for manual review.",
     "submitAnyway": "Verify & Continue",
     "close": "Close",
-    "successMessage": "Your audit request was successfully submitted",
+    "successMessage": "Audit Request Successfully Submitted!",
     "sending": "Sending...",
     "genericError": "Error processing request."
   }

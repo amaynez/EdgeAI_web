@@ -33,9 +33,11 @@ export async function ensureLeadsTable(): Promise<void> {
       q2            TEXT,
       q3            TEXT,
       contacted     BOOLEAN     NOT NULL DEFAULT FALSE,
-      qualification JSONB,
-      linkedin      TEXT,
-      apollo_data   JSONB
+      qualification     JSONB,
+      linkedin          TEXT,
+      apollo_data       JSONB,
+      processing_status TEXT,
+      email_sent_at     TIMESTAMPTZ
     )
   `);
 
@@ -56,6 +58,15 @@ export async function ensureLeadsTable(): Promise<void> {
     // Ignore if the column already exists
     if (err.code !== '42701') {
       console.warn('Failed to add processing_status column to leads table:', err);
+    }
+  }
+
+  // Add email_sent_at column
+  try {
+    await pool.query(`ALTER TABLE leads ADD COLUMN email_sent_at TIMESTAMPTZ`);
+  } catch (err: any) {
+    if (err.code !== '42701') {
+      console.warn('Failed to add email_sent_at column to leads table:', err);
     }
   }
 }

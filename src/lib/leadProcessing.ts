@@ -5,7 +5,7 @@ import { sanitizeHtml } from '@/lib/sanitize';
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
 
-export interface LeadData {
+interface LeadData {
   name: string;
   email: string;
   company: string;
@@ -26,9 +26,141 @@ function escapeHtml(value: string | undefined | null): string {
     .replace(/'/g, '&#x27;');
 }
 
-export async function processLeadBackground(leadId: string, leadData: LeadData) {
+export interface AIInsights {
+  urgencyScore: number;
+  potentialScore: number;
+  analysis: string;
+  draftEmail: string;
+}
+
+export interface ApolloData {
+  raw_data: any;
+  compressed_data: {
+    title?: string;
+    seniority?: string;
+    primary_phone?: string;
+    estimated_num_employees?: number;
+    industry?: string;
+    technology_names?: string[];
+  };
+}
+
+export type Persona = 'AI_CONSULTANT' | 'MARGIN_RECOVERY';
+
+interface PersonaConfig {
+  systemInstruction: string;
+  prompt: (data: LeadData & { apolloDataStr: string }) => string;
+  emailContent: (aiInsights: AIInsights, company: string) => {
+    subject: string;
+    header: string;
+    q1: string;
+    q2: string;
+    q3: string;
+  };
+}
+
+const PERSONA_CONFIGS: Record<Persona, PersonaConfig> = {
+  AI_CONSULTANT: {
+    systemInstruction: `You are an expert B2B AI Consultant evaluator. Analyze this inbound lead for your consulting business. You must return ONLY a raw valid JSON object with the following schema, and no other text:
+{
+  "urgencyScore": (number 1-10, based on how urgently they need AI security/auditing based on answers and company context),
+  "potentialScore": (number 1-10, based on their role, company size potential, and tech stack),
+  "analysis": "1-2 sentence concise analysis of their vulnerability and why they are a good lead",
+  "draftEmail": "A professional HTML-formatted reply draft to the lead addressing their specific pain points, proposing a brief introductory chat. Emphasize how you can help them specifically based on their answers. Sign it as 'Armando Maynez, B2B AI Consultant'."
+}`,
+    prompt: (d) => `
+Lead Profile:
+- Name: ${d.name}
+- Role: ${d.role}
+- Company: ${d.company}
+${d.linkedin ? `- LinkedIn: ${d.linkedin}` : ''}
+${d.apolloDataStr}
+
+Assessment Answers:
+1. AI tools accessed (last 30 days)? ${d.q1}
+2. Operational data containing PII/IP? ${d.q2}
+3. Data exposed via cloud AI breach? ${d.q3}
+      `,
+    emailContent: (ai, company) => ({
+      subject: `[Lead: ${ai.potentialScore}/10] AI Audit Request: ${escapeHtml(company)}`,
+      header: 'New AI Audit Lead Captured',
+      q1: 'AI tools accessed (last 30 days)?',
+      q2: 'Operational data containing PII/IP?',
+      q3: 'Data exposed via cloud AI breach?'
+    })
+  },
+  MARGIN_RECOVERY: {
+    systemInstruction: `You are an expert B2B Margin Recovery Consultant evaluator. Analyze this inbound lead for your consulting business. You must return ONLY a raw valid JSON object with the following schema, and no other text:
+{
+  "urgencyScore": (number 1-10, based on how urgently they need margin recovery/auditing based on answers and company context),
+  "potentialScore": (number 1-10, based on their role, company size potential, and retailer exposure),
+  "analysis": "1-2 sentence concise analysis of their margin leakage vulnerability and why they are a good lead",
+  "draftEmail": "A professional HTML-formatted reply draft to the lead addressing their specific pain points, proposing a brief introductory chat. Emphasize how you can help them specifically based on their answers. Sign it as 'Armando Maynez, Founder at Zero Leak'."
+}`,
+    prompt: (d) => `
+Lead Profile:
+- Name: ${d.name}
+- Role: ${d.role}
+- Company: ${d.company}
+${d.linkedin ? `- LinkedIn: ${d.linkedin}` : ''}
+${d.apolloDataStr}
+Assessment Answers:
+1. Retailers currently selling to? ${d.q1}
+2. % of P&L attributed to trade spend/allowances? ${d.q2}
+3. Experienced unexpected deductions/margin erosion in last 12 months? ${d.q3}
+      `,
+    emailContent: (ai, company) => ({
+      subject: `[Lead: ${ai.potentialScore}/10] Strategic Audit Request: ${escapeHtml(company)}`,
+      header: 'New Strategic Audit Lead Captured',
+      q1: 'Retailers currently selling to?',
+      q2: '% of P&L attributed to trade spend/allowances?',
+      q3: 'Experienced unexpected deductions/margin erosion in last 12 months?'
+    })
+  }
+};
+
+export interface LeadUpdateResult {
+  leadId: string;
+  aiInsights: AIInsights;
+  processingStatus: string;
+  apolloData: ApolloData | null;
+  emailSentSuccessfully: boolean;
+}
+
+export async function updateLead(res: LeadUpdateResult) {
+  const { leadId, aiInsights, processingStatus, apolloData, emailSentSuccessfully } = res;
+
+  if (apolloData) {
+     await pool.query(
+       `UPDATE leads SET qualification = $1, processing_status = $2, apollo_data = $3${emailSentSuccessfully ? ', email_sent_at = NOW()' : ''} WHERE id = $4`,
+       [JSON.stringify(aiInsights), processingStatus, JSON.stringify(apolloData), leadId]
+     );
+  } else {
+     await pool.query(
+       `UPDATE leads SET qualification = $1, processing_status = $2${emailSentSuccessfully ? ', email_sent_at = NOW()' : ''} WHERE id = $3`,
+       [JSON.stringify(aiInsights), processingStatus, leadId]
+     );
+  }
+}
+
+export async function processLeadBackground(
+  leadId: string,
+  leadData: LeadData,
+  options: {
+    existingData?: {
+      apollo_data?: any;
+      email_sent_at?: Date | null;
+      contacted?: boolean;
+    };
+    skipUpdate?: boolean;
+    persona?: Persona;
+  } = {}
+): Promise<LeadUpdateResult | void> {
   const { name, email, company, role, q1, q2, q3, linkedin } = leadData;
-  let aiInsights = {
+  const persona = options.persona || 'AI_CONSULTANT';
+  const config = PERSONA_CONFIGS[persona];
+
+  let aiInsights: AIInsights = {
     urgencyScore: 0,
     potentialScore: 0,
     analysis: 'AI Analysis Failed or Unavailable.',
@@ -41,23 +173,37 @@ export async function processLeadBackground(leadId: string, leadData: LeadData) 
     // --- 0. Check if existing apollo_data exists (e.g. from a prior run) ---
     let existingApolloDataStr = null;
     let emailAlreadySent = false;
-    try {
-      const { rows } = await pool.query(`SELECT apollo_data, email_sent_at, contacted FROM leads WHERE id = $1`, [leadId]);
-      if (rows.length > 0) {
-        if (rows[0].email_sent_at || rows[0].contacted) {
-            emailAlreadySent = true;
-        }
 
-        if (rows[0].apollo_data && rows[0].apollo_data.raw_data) {
-          // Build the string from the saved data to avoid recalling Apollo
-          const data = rows[0].apollo_data.compressed_data;
-          if (data) {
-            existingApolloDataStr = `\nApollo.io Enrichment Data (for context):\n${JSON.stringify(data, null, 2)}`;
-          }
+    if (options.existingData) {
+      const { apollo_data, email_sent_at, contacted } = options.existingData;
+      if (email_sent_at || contacted) {
+        emailAlreadySent = true;
+      }
+      if (apollo_data && apollo_data.raw_data) {
+        const data = apollo_data.compressed_data;
+        if (data) {
+          existingApolloDataStr = `\nApollo.io Enrichment Data (for context):\n${JSON.stringify(data, null, 2)}`;
         }
       }
-    } catch (err: any) {
-      console.error('Error fetching existing lead data:', err);
+    } else {
+      try {
+        const { rows } = await pool.query(`SELECT apollo_data, email_sent_at, contacted FROM leads WHERE id = $1`, [leadId]);
+        if (rows.length > 0) {
+          if (rows[0].email_sent_at || rows[0].contacted) {
+              emailAlreadySent = true;
+          }
+
+          if (rows[0].apollo_data && rows[0].apollo_data.raw_data) {
+            // Build the string from the saved data to avoid recalling Apollo
+            const data = rows[0].apollo_data.compressed_data;
+            if (data) {
+              existingApolloDataStr = `\nApollo.io Enrichment Data (for context):\n${JSON.stringify(data, null, 2)}`;
+            }
+          }
+        }
+      } catch (err: any) {
+        console.error('Error fetching existing lead data:', err);
+      }
     }
 
     // --- 1. Apollo.io Enrichment ---
@@ -130,28 +276,10 @@ export async function processLeadBackground(leadId: string, leadData: LeadData) 
     if (process.env.GEMINI_API_KEY) {
       const model = genAI.getGenerativeModel({
         model: 'gemini-flash-lite-latest',
-        systemInstruction: `You are an expert B2B Margin Recovery Consultant evaluator. Analyze this inbound lead for your consulting business. You must return ONLY a raw valid JSON object with the following schema, and no other text:
-{
-  "urgencyScore": (number 1-10, based on how urgently they need margin recovery/auditing based on answers and company context),
-  "potentialScore": (number 1-10, based on their role, company size potential, and retailer exposure),
-  "analysis": "1-2 sentence concise analysis of their margin leakage vulnerability and why they are a good lead",
-  "draftEmail": "A professional HTML-formatted reply draft to the lead addressing their specific pain points, proposing a brief introductory chat. Emphasize how you can help them specifically based on their answers. Sign it as 'Armando Maynez, Founder at Zero Leak'."
-}`
+        systemInstruction: config.systemInstruction
       });
 
-      const prompt = `
-Lead Profile:
-- Name: ${name}
-- Role: ${role}
-- Company: ${company}
-${linkedin ? `- LinkedIn: ${linkedin}` : ''}
-${apolloDataStr}
-
-Assessment Answers:
-1. Retailers currently selling to? ${q1}
-2. % of P&L attributed to trade spend/allowances? ${q2}
-3. Experienced unexpected deductions/margin erosion in last 12 months? ${q3}
-      `;
+      const prompt = config.prompt({ ...leadData, apolloDataStr });
 
       try {
         const result = await model.generateContent(prompt);
@@ -209,14 +337,16 @@ Assessment Answers:
           },
         });
 
+        const content = config.emailContent(aiInsights, company);
+
         const mailOptions = {
           from: user,
           to: user, // Send to yourself
           replyTo: email,
-          subject: `[Lead: ${aiInsights.potentialScore}/10] Strategic Audit Request: ${escapeHtml(company)}`,
+          subject: content.subject,
           html: `
             <div style="font-family: sans-serif; max-width: 600px; margin: auto; padding: 20px; color: #333; line-height: 1.6;">
-              <h2 style="border-bottom: 2px solid #000; padding-bottom: 10px;">New Strategic Audit Lead Captured</h2>
+              <h2 style="border-bottom: 2px solid #000; padding-bottom: 10px;">${content.header}</h2>
 
               <div style="background-color: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 20px; border-left: 4px solid #007bff;">
                 <h3 style="margin-top: 0;">AI Qualification Insights</h3>
@@ -240,9 +370,9 @@ Assessment Answers:
 
               <h3 style="color: #000; border-bottom: 1px solid #ddd; padding-bottom: 4px; margin-top: 24px;">Vulnerability Assessment Answers</h3>
               <ul style="padding-left: 20px;">
-                <li><strong>Q1: Retailers currently selling to?</strong><br> ${escapeHtml(q1)}</li>
-                <li style="margin-top: 10px;"><strong>Q2: % of P&L attributed to trade spend/allowances?</strong><br> ${escapeHtml(q2)}</li>
-                <li style="margin-top: 10px;"><strong>Q3: Experienced unexpected deductions/margin erosion in last 12 months?</strong><br> ${escapeHtml(q3)}</li>
+                <li><strong>Q1: ${content.q1}</strong><br> ${escapeHtml(q1)}</li>
+                <li style="margin-top: 10px;"><strong>Q2: ${content.q2}</strong><br> ${escapeHtml(q2)}</li>
+                <li style="margin-top: 10px;"><strong>Q3: ${content.q3}</strong><br> ${escapeHtml(q3)}</li>
               </ul>
 
               <h3 style="color: #000; border-bottom: 1px solid #ddd; padding-bottom: 4px; margin-top: 24px;">Drafted Email Response (via Gemini)</h3>
@@ -260,23 +390,27 @@ Assessment Answers:
       }
     }
 
+    const result: LeadUpdateResult = {
+      leadId,
+      aiInsights,
+      processingStatus,
+      apolloData: (apolloRawData && apolloCompressedData && !existingApolloDataStr)
+        ? { raw_data: apolloRawData, compressed_data: apolloCompressedData }
+        : null,
+      emailSentSuccessfully
+    };
+
+    if (options.skipUpdate) {
+      return result;
+    }
+
     // --- 4. Update Database with Retry Logic ---
     let retries = 3;
     let delay = 1000;
 
     while (retries > 0) {
       try {
-        if (apolloRawData && apolloCompressedData && !existingApolloDataStr) {
-           await pool.query(
-             `UPDATE leads SET qualification = $1, processing_status = $2, apollo_data = $3${emailSentSuccessfully ? ', email_sent_at = NOW()' : ''} WHERE id = $4`,
-             [JSON.stringify(aiInsights), processingStatus, JSON.stringify({ raw_data: apolloRawData, compressed_data: apolloCompressedData }), leadId]
-           );
-        } else {
-           await pool.query(
-             `UPDATE leads SET qualification = $1, processing_status = $2${emailSentSuccessfully ? ', email_sent_at = NOW()' : ''} WHERE id = $3`,
-             [JSON.stringify(aiInsights), processingStatus, leadId]
-           );
-        }
+        await updateLead(result);
         break; // Success
       } catch (dbErr: any) {
         console.error(`Failed to update lead (Attempt ${4 - retries}/3):`, dbErr);
@@ -292,6 +426,10 @@ Assessment Answers:
     }
   } catch (globalErr: any) {
     console.error('Error in background processing:', globalErr);
+
+    if (options.skipUpdate) {
+      throw globalErr;
+    }
 
     // Fatal error update
     try {
