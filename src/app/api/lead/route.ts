@@ -4,17 +4,6 @@ import { pool, ensureLeadsTable } from '@/lib/db';
 import { processLeadBackground } from '@/lib/leadProcessing';
 
 // ---------------------------------------------------------------------------
-// Cached DB table initializer — avoids a CREATE TABLE round-trip on every
-// request. Set to false on cold-start; flipped to true after first success.
-// ---------------------------------------------------------------------------
-let tableInitialized = false;
-async function ensureTableOnce(): Promise<void> {
-  if (tableInitialized) return;
-  await ensureLeadsTable();
-  tableInitialized = true;
-}
-
-// ---------------------------------------------------------------------------
 // In-memory rate limiter (10 requests per IP per 15-minute window).
 // NOTE: In a multi-instance/serverless environment each cold-start gets its
 // own Map. For stricter limits use a shared store such as Upstash Redis.
@@ -211,7 +200,7 @@ export async function POST(request: Request) {
     };
 
     // --- 1. Persist to Neon Postgres immediately ---
-    await ensureTableOnce();
+    await ensureLeadsTable();
 
     const leadId = crypto.randomUUID();
     const normalizedLinkedin = linkedin?.trim() === '' ? null : linkedin;

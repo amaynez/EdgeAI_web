@@ -15,13 +15,21 @@ const pool = new Pool({
   connectionTimeoutMillis: 5_000,
 });
 
+let initPromise: Promise<void> | null = null;
+
 /**
  * Creates the `leads` table if it does not already exist.
- * Safe to call on every request — the IF NOT EXISTS guard makes it a no-op
- * after the first run.
+ * Safe to call on every request — the initialization is cached via a Promise
+ * to avoid duplicate queries, reducing network round-trips.
  */
-export async function ensureLeadsTable(): Promise<void> {
-  await pool.query(`
+export function ensureLeadsTable(): Promise<void> {
+  if (initPromise) {
+    return initPromise;
+  }
+
+  initPromise = (async () => {
+    try {
+      await pool.query(`
     CREATE TABLE IF NOT EXISTS leads (
       id            TEXT        PRIMARY KEY,
       timestamp     TIMESTAMPTZ NOT NULL DEFAULT NOW(),
@@ -61,14 +69,21 @@ export async function ensureLeadsTable(): Promise<void> {
     }
   }
 
-  // Add email_sent_at column
-  try {
-    await pool.query(`ALTER TABLE leads ADD COLUMN email_sent_at TIMESTAMPTZ`);
-  } catch (err: any) {
-    if (err.code !== '42701') {
-      console.warn('Failed to add email_sent_at column to leads table:', err);
+      // Add email_sent_at column
+      try {
+        await pool.query(`ALTER TABLE leads ADD COLUMN email_sent_at TIMESTAMPTZ`);
+      } catch (err: any) {
+        if (err.code !== '42701') {
+          console.warn('Failed to add email_sent_at column to leads table:', err);
+        }
+      }
+    } catch (error) {
+      initPromise = null; // Reset cache on failure so it can be retried
+      throw error;
     }
-  }
+  })();
+
+  return initPromise;
 }
 
 export { pool };
