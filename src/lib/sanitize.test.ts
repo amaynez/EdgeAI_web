@@ -69,11 +69,10 @@ describe('sanitizeHtml', () => {
 
   test('handles malformed tags', () => {
     const input = '<div class="test" >Malformed <p';
-    // Depending on regex, <p might be left as is or removed.
-    // The current regex is /<\/?[\w][\s\S]*?>/g which requires a closing >
     const result = sanitizeHtml(input);
     assert.ok(result.includes('<div class="test">'));
-    assert.ok(result.includes('Malformed <p'));
+    // Unclosed tags at end of input are now stripped for safety
+    assert.strictEqual(result, '<div class="test">Malformed ');
   });
 
   test('blocks unsafe style expressions', () => {
@@ -100,5 +99,23 @@ describe('sanitizeHtml', () => {
     const input = '<div class=\'foo " bar\'>Content</div>';
     const result = sanitizeHtml(input);
     assert.strictEqual(result, '<div class="foo &quot; bar">Content</div>');
+  });
+
+  test('handles tags with > in attribute values', () => {
+    const input = '<a href="https://example.com/?q=>">Link</a>';
+    const result = sanitizeHtml(input);
+    assert.strictEqual(result, '<a href="https://example.com/?q=>">Link</a>');
+  });
+
+  test('removes unclosed dangerous tags', () => {
+    const input = 'Dangerous <script src="http://evil.com/xss.js"';
+    const result = sanitizeHtml(input);
+    assert.strictEqual(result, 'Dangerous ');
+  });
+
+  test('removes unclosed HTML comments', () => {
+    const input = 'Safe<!-- <script>alert("xss")</script>';
+    const result = sanitizeHtml(input);
+    assert.strictEqual(result, 'Safe');
   });
 });
