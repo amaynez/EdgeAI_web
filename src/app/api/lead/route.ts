@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { waitUntil } from '@vercel/functions';
 import { pool, ensureLeadsTable } from '@/lib/db';
-import { processLeadBackground } from '@/lib/leadProcessing';
+import { processLeadBackground, LeadData } from '@/lib/leadProcessing';
 
 // ---------------------------------------------------------------------------
 // Cached DB table initializer — avoids a CREATE TABLE round-trip on every
@@ -71,17 +71,6 @@ type Q1Value = typeof Q1_VALUES[number];
 type Q2Value = typeof Q2_VALUES[number];
 type Q3Value = typeof Q3_VALUES[number];
 
-// ---------------------------------------------------------------------------
-// HTML-escape helper — prevents XSS when interpolating user data into email HTML.
-// ---------------------------------------------------------------------------
-function escapeHtml(value: string | undefined | null): string {
-  return String(value ?? '')
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#x27;');
-}
 
 function validateLeadPayload(data: Record<string, unknown>): string[] {
   const errors: string[] = [];
@@ -164,18 +153,6 @@ function validateLeadPayload(data: Record<string, unknown>): string[] {
 
   return errors;
 }
-
-interface LeadData {
-  name: string;
-  email: string;
-  company: string;
-  role: string;
-  q1?: Q1Value | null;
-  q2?: Q2Value | null;
-  q3?: Q3Value | null;
-  linkedin?: string | null;
-}
-
 
 export async function POST(request: Request) {
   try {
