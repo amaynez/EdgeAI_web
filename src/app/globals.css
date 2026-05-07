@@ -444,33 +444,6 @@ body{
 .footer-social-icon:hover{color:var(--text-primary);}
 
 /* AUDIT MODAL */
-.toast-notification {
-  position: fixed;
-  bottom: 24px;
-  left: 50%;
-  transform: translateX(-50%);
-  background-color: var(--text-primary);
-  color: #ffffff;
-  padding: 12px 24px;
-  border-radius: var(--radius-sm);
-  box-shadow: var(--shadow-lg);
-  font-family: var(--font-sans);
-  font-size: 0.95rem;
-  z-index: 10000;
-  animation: fadeUp 0.3s ease-out;
-}
-
-@keyframes fadeUp {
-  from {
-    opacity: 0;
-    transform: translate(-50%, 20px);
-  }
-  to {
-    opacity: 1;
-    transform: translate(-50%, 0);
-  }
-}
-
 .audit-modal-overlay{
   position:fixed;top:0;left:0;width:100vw;height:100vh;
   background:rgba(20,20,30,0.55);

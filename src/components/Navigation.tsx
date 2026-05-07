@@ -18,22 +18,10 @@ export default function Navigation({
   const [formOpen, setFormOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [activeSection, setActiveSection] = useState<string | null>(null);
-  const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const menuRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
 
   const toggleMenu = () => setMenuOpen(!menuOpen);
-
-  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
-
-  // Clear timeout on unmount
-  useEffect(() => {
-    return () => {
-      if (timeoutRef.current) {
-        clearTimeout(timeoutRef.current);
-      }
-    };
-  }, []);
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -167,23 +155,8 @@ export default function Navigation({
         <AuditLeadForm
           formCopy={formCopy}
           onClose={() => setFormOpen(false)}
-          onSuccess={() => {
-            setFormOpen(false);
-            setSuccessMessage(formCopy.successMessage);
-            if (timeoutRef.current) {
-              clearTimeout(timeoutRef.current);
-            }
-            timeoutRef.current = setTimeout(() => {
-              setSuccessMessage(null);
-            }, 5000);
-          }}
+          onSuccess={() => setFormOpen(false)}
         />
-      )}
-
-      {successMessage && (
-        <div className="toast-notification" role="status" aria-live="polite">
-          {successMessage}
-        </div>
       )}
     </>
   );
