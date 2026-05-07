@@ -77,8 +77,17 @@ export async function GET(request: Request) {
         if (res) {
           try {
             await updateLead(res);
-          } catch (updateErr) {
+          } catch (updateErr: any) {
             console.error(`Failed to update lead ${leadId}:`, updateErr);
+            // Record failure even if updateLead itself fails (e.g. DB connection issues)
+            try {
+              await pool.query(
+                `UPDATE leads SET processing_status = $1 WHERE id = $2`,
+                [`error: update failed (${updateErr?.message || 'Unknown error'})`, leadId]
+              );
+            } catch (dbErr) {
+              console.error(`Failed to record update error for lead ${leadId}:`, dbErr);
+            }
           }
         }
       } else {
