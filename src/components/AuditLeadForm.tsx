@@ -1,6 +1,7 @@
 'use client';
 import React, { useState } from 'react';
 import type { Dictionary } from '@/i18n';
+import { getErrorMessage } from '@/lib/errorHelper';
 
 type SelectOption = { value: string; label: string };
 
@@ -70,7 +71,7 @@ export default function AuditLeadForm({ formCopy, onClose, onSuccess, onError }:
       if (onSuccess) onSuccess(successMsg);
       else { alert(successMsg); if (onClose) onClose(); }
     } catch (err: unknown) {
-      const errMsg = err instanceof Error ? err.message : dict.genericError;
+      const errMsg = getErrorMessage(err, dict.genericError);
       setError(errMsg);
       if (onError) onError(errMsg);
     } finally {
