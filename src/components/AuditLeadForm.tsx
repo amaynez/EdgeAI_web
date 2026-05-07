@@ -1,8 +1,12 @@
 'use client';
 import React, { useState } from 'react';
+import type { Dictionary } from '@/i18n';
+import { getErrorMessage } from '@/lib/errorHelper';
+
+type SelectOption = { value: string; label: string };
 
 type AuditLeadFormProps = {
-  formCopy: any;
+  formCopy: Dictionary['form'];
   onClose?: () => void;
   onSuccess?: (message: string) => void;
   onError?: (message: string) => void;
@@ -66,8 +70,8 @@ export default function AuditLeadForm({ formCopy, onClose, onSuccess, onError }:
       const successMsg = dict.successMessage;
       if (onSuccess) onSuccess(successMsg);
       else { alert(successMsg); if (onClose) onClose(); }
-    } catch (err: any) {
-      const errMsg = dict.genericError;
+    } catch (err: unknown) {
+      const errMsg = getErrorMessage(err, dict.genericError);
       setError(errMsg);
       if (onError) onError(errMsg);
     } finally {
@@ -117,21 +121,21 @@ export default function AuditLeadForm({ formCopy, onClose, onSuccess, onError }:
                 <label htmlFor="q1" className="audit-question">{dict.q1}</label>
                 <select id="q1" name="q1" value={formData.q1} onChange={handleInputChange} className="audit-input" required>
                   <option value="" disabled>—</option>
-                  {dict.q1opts.map((opt: any) => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
+                  {dict.q1opts.map((opt: SelectOption) => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
                 </select>
               </div>
               <div className="audit-field">
                 <label htmlFor="q2" className="audit-question">{dict.q2}</label>
                 <select id="q2" name="q2" value={formData.q2} onChange={handleInputChange} className="audit-input" required>
                   <option value="" disabled>—</option>
-                  {dict.q2opts.map((opt: any) => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
+                  {dict.q2opts.map((opt: SelectOption) => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
                 </select>
               </div>
               <div className="audit-field">
                 <label htmlFor="q3" className="audit-question">{dict.q3}</label>
                 <select id="q3" name="q3" value={formData.q3} onChange={handleInputChange} className="audit-input" required>
                   <option value="" disabled>—</option>
-                  {dict.q3opts.map((opt: any) => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
+                  {dict.q3opts.map((opt: SelectOption) => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
                 </select>
               </div>
               <button type="submit" className="btn-primary audit-button" disabled={isSubmitting}>

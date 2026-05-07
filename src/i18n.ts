@@ -9,6 +9,8 @@ const dictionaries = {
 export type Locale = keyof typeof dictionaries;
 export { SUPPORTED_LOCALES as locales, DEFAULT_LOCALE as defaultLocale } from '@/lib/locales';
 
+export type Dictionary = Awaited<ReturnType<typeof dictionaries.en>>;
+
 export const getDictionary = async (locale: string) => {
   if (locale in dictionaries) {
     return dictionaries[locale as Locale]();
