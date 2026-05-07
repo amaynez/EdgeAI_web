@@ -24,6 +24,17 @@ export default function Navigation({
 
   const toggleMenu = () => setMenuOpen(!menuOpen);
 
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Clear timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+    };
+  }, []);
+
   useEffect(() => {
     const observer = new IntersectionObserver(
       (entries) => {
@@ -156,16 +167,21 @@ export default function Navigation({
         <AuditLeadForm
           formCopy={formCopy}
           onClose={() => setFormOpen(false)}
-          onSuccess={(msg) => {
+          onSuccess={() => {
             setFormOpen(false);
-            setSuccessMessage(msg);
-            setTimeout(() => setSuccessMessage(null), 5000);
+            setSuccessMessage(formCopy.successMessage);
+            if (timeoutRef.current) {
+              clearTimeout(timeoutRef.current);
+            }
+            timeoutRef.current = setTimeout(() => {
+              setSuccessMessage(null);
+            }, 5000);
           }}
         />
       )}
 
       {successMessage && (
-        <div className="toast-notification">
+        <div className="toast-notification" role="status" aria-live="polite">
           {successMessage}
         </div>
       )}
