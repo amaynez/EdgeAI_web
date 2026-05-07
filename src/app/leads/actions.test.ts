@@ -1,13 +1,9 @@
-import { describe, test, mock, beforeEach, afterEach } from 'node:test';
+import { describe, test, mock, afterEach } from 'node:test';
 import assert from 'node:assert/strict';
 import { fetchLeads, toggleContacted } from './actions';
 import { pool } from '@/lib/db';
 
 describe('Leads Actions', () => {
-  beforeEach(() => {
-    mock.restoreAll();
-  });
-
   afterEach(() => {
     mock.restoreAll();
   });
@@ -56,10 +52,7 @@ describe('Leads Actions', () => {
     });
 
     test('returns error when lead is not found (rowCount is 0)', async () => {
-      mock.method(pool, 'query', async (queryStr: string) => {
-        if (queryStr.includes('CREATE TABLE') || queryStr.includes('ALTER TABLE')) {
-          return { rowCount: 0 };
-        }
+      mock.method(pool, 'query', async () => {
         return { rowCount: 0 };
       });
 
