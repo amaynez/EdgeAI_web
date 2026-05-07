@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { toggleContacted, fetchLeads } from './actions';
+import { sanitizeHtml } from '@/lib/sanitize';
 
 export default function LeadsTable({ initialLeads }: { initialLeads: any[] }) {
   const [leads, setLeads] = useState(initialLeads);
@@ -46,14 +47,18 @@ export default function LeadsTable({ initialLeads }: { initialLeads: any[] }) {
 
   const handleCopy = async (id: string, draftEmailHTML: string) => {
     try {
-      const plainTextDiv = document.createElement("div");
-      plainTextDiv.innerHTML = draftEmailHTML;
-      const plainText = plainTextDiv.innerText;
+      // Sanitize the HTML before extracting text or placing it on the clipboard
+      const sanitizedHTML = sanitizeHtml(draftEmailHTML || "");
+
+      // Use DOMParser to safely extract text content without executing scripts
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(sanitizedHTML, "text/html");
+      const plainText = doc.body.textContent || "";
 
       // Copying as HTML allows pasting with bold/styles preserved in Gmail
       await navigator.clipboard.write([
         new ClipboardItem({
-          "text/html": new Blob([draftEmailHTML], { type: "text/html" }),
+          "text/html": new Blob([sanitizedHTML], { type: "text/html" }),
           "text/plain": new Blob([plainText], { type: "text/plain" }),
         })
       ]);
