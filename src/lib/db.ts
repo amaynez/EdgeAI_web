@@ -52,9 +52,10 @@ export function ensureLeadsTable(): Promise<void> {
   // In case the table was created before the 'linkedin' column existed, attempt to add it safely
   try {
     await pool.query(`ALTER TABLE leads ADD COLUMN linkedin TEXT`);
-  } catch (err: any) {
+  } catch (err: unknown) {
     // Ignore if the column already exists
-    if (err.code !== '42701') {
+    const isDuplicateColumn = typeof err === 'object' && err !== null && 'code' in err && (err as Record<string, unknown>).code === '42701';
+    if (!isDuplicateColumn) {
       console.warn('Failed to add linkedin column to leads table, it may already exist:', err);
     }
   }
@@ -62,9 +63,10 @@ export function ensureLeadsTable(): Promise<void> {
   // Add processing_status column for async task tracking
   try {
     await pool.query(`ALTER TABLE leads ADD COLUMN processing_status TEXT`);
-  } catch (err: any) {
+  } catch (err: unknown) {
     // Ignore if the column already exists
-    if (err.code !== '42701') {
+    const isDuplicateColumn = typeof err === 'object' && err !== null && 'code' in err && (err as Record<string, unknown>).code === '42701';
+    if (!isDuplicateColumn) {
       console.warn('Failed to add processing_status column to leads table:', err);
     }
   }
@@ -72,8 +74,9 @@ export function ensureLeadsTable(): Promise<void> {
       // Add email_sent_at column
       try {
         await pool.query(`ALTER TABLE leads ADD COLUMN email_sent_at TIMESTAMPTZ`);
-      } catch (err: any) {
-        if (err.code !== '42701') {
+      } catch (err: unknown) {
+        const isDuplicateColumn = typeof err === 'object' && err !== null && 'code' in err && (err as Record<string, unknown>).code === '42701';
+        if (!isDuplicateColumn) {
           console.warn('Failed to add email_sent_at column to leads table:', err);
         }
       }

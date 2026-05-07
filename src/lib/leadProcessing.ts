@@ -201,7 +201,7 @@ export async function processLeadBackground(
             }
           }
         }
-      } catch (err: any) {
+      } catch (err: unknown) {
         console.error('Error fetching existing lead data:', err);
       }
     }
@@ -256,9 +256,10 @@ export async function processLeadBackground(
           console.warn('Apollo API error:', await apolloRes.text());
           apolloFailed = true;
         }
-      } catch (err: any) {
+      } catch (err: unknown) {
         apolloFailed = true;
-        if (err.name === 'AbortError') {
+        const isAbortError = err instanceof Error && err.name === 'AbortError';
+        if (isAbortError) {
           console.warn('Apollo API timeout exceeded');
         } else {
           console.error('Error fetching from Apollo:', err);
@@ -424,7 +425,7 @@ export async function processLeadBackground(
         }
       }
     }
-  } catch (globalErr: any) {
+  } catch (globalErr: unknown) {
     console.error('Error in background processing:', globalErr);
 
     if (options.skipUpdate) {
@@ -433,11 +434,12 @@ export async function processLeadBackground(
 
     // Fatal error update
     try {
+      const errorMessage = globalErr instanceof Error ? globalErr.message : String(globalErr);
       await pool.query(
          `UPDATE leads SET processing_status = $1 WHERE id = $2`,
-         [`error: ${globalErr.message}`, leadId]
+         [`error: ${errorMessage}`, leadId]
       );
-    } catch (e: any) {
+    } catch (e: unknown) {
       console.error('Failed to write fatal error to DB', e);
     }
   }
