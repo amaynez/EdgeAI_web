@@ -160,4 +160,42 @@ describe('POST /api/lead/retry', () => {
     assert.deepEqual(data, { error: 'Failed to initiate retry' });
     assert.strictEqual(consoleErrorMock.mock.callCount(), 1);
   });
+
+  test('returns 500 if request body is invalid JSON', async () => {
+    // Arrange
+    const req = new Request('http://localhost/api/lead/retry', {
+      method: 'POST',
+      body: 'invalid-json',
+    });
+
+    const consoleErrorMock = mock.method(console, 'error', () => {});
+
+    // Act
+    const res = await POST(req);
+    const data = await res.json();
+
+    // Assert
+    assert.strictEqual(res.status, 500);
+    assert.deepEqual(data, { error: 'Failed to initiate retry' });
+    assert.strictEqual(consoleErrorMock.mock.callCount(), 1);
+  });
+
+  test('returns 500 if request body is null', async () => {
+    // Arrange
+    const req = new Request('http://localhost/api/lead/retry', {
+      method: 'POST',
+      body: JSON.stringify(null),
+    });
+
+    const consoleErrorMock = mock.method(console, 'error', () => {});
+
+    // Act
+    const res = await POST(req);
+    const data = await res.json();
+
+    // Assert
+    assert.strictEqual(res.status, 500);
+    assert.deepEqual(data, { error: 'Failed to initiate retry' });
+    assert.strictEqual(consoleErrorMock.mock.callCount(), 1);
+  });
 });
