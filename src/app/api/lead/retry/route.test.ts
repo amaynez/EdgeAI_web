@@ -2,7 +2,7 @@ import { describe, test, mock, afterEach } from 'node:test';
 import assert from 'node:assert/strict';
 import { POST } from './route';
 import { pool } from '@/lib/db';
-import * as leadProcessing from '@/lib/leadProcessing';
+
 
 describe('POST /api/lead/retry', () => {
 
@@ -11,18 +11,23 @@ describe('POST /api/lead/retry', () => {
   });
 
   test('returns 400 if leadId is missing', async () => {
+    // Arrange
     const req = new Request('http://localhost/api/lead/retry', {
       method: 'POST',
       body: JSON.stringify({}),
     });
 
+    // Act
     const res = await POST(req);
-    assert.strictEqual(res.status, 400);
     const data = await res.json();
+
+    // Assert
+    assert.strictEqual(res.status, 400);
     assert.deepEqual(data, { error: 'Missing leadId' });
   });
 
   test('returns 404 if lead is not found', async () => {
+    // Arrange
     const req = new Request('http://localhost/api/lead/retry', {
       method: 'POST',
       body: JSON.stringify({ leadId: 'missing-id' }),
@@ -32,13 +37,17 @@ describe('POST /api/lead/retry', () => {
       return { rows: [] };
     });
 
+    // Act
     const res = await POST(req);
-    assert.strictEqual(res.status, 404);
     const data = await res.json();
+
+    // Assert
+    assert.strictEqual(res.status, 404);
     assert.deepEqual(data, { error: 'Lead not found' });
   });
 
   test('returns 409 if lead is already being processed', async () => {
+    // Arrange
     const req = new Request('http://localhost/api/lead/retry', {
       method: 'POST',
       body: JSON.stringify({ leadId: 'existing-id' }),
@@ -56,13 +65,17 @@ describe('POST /api/lead/retry', () => {
       return { rows: [] };
     });
 
+    // Act
     const res = await POST(req);
-    assert.strictEqual(res.status, 409);
     const data = await res.json();
+
+    // Assert
+    assert.strictEqual(res.status, 409);
     assert.deepEqual(data, { error: 'Lead is already being processed' });
   });
 
   test('successfully initiates retry and returns 200', async () => {
+    // Arrange
     const req = new Request('http://localhost/api/lead/retry', {
       method: 'POST',
       body: JSON.stringify({ leadId: 'valid-id' }),
@@ -85,13 +98,17 @@ describe('POST /api/lead/retry', () => {
       return new Response(JSON.stringify({}), { status: 200 });
     });
 
+    // Act
     const res = await POST(req);
-    assert.strictEqual(res.status, 200);
     const data = await res.json();
+
+    // Assert
+    assert.strictEqual(res.status, 200);
     assert.deepEqual(data, { success: true, message: 'Retry initiated' });
   });
 
   test('returns 500 on database or internal error', async () => {
+    // Arrange
     const req = new Request('http://localhost/api/lead/retry', {
       method: 'POST',
       body: JSON.stringify({ leadId: 'valid-id' }),
@@ -102,9 +119,12 @@ describe('POST /api/lead/retry', () => {
       throw new Error('DB Error');
     });
 
+    // Act
     const res = await POST(req);
-    assert.strictEqual(res.status, 500);
     const data = await res.json();
+
+    // Assert
+    assert.strictEqual(res.status, 500);
     assert.deepEqual(data, { error: 'Failed to initiate retry' });
     assert.strictEqual(consoleErrorMock.mock.callCount(), 1);
   });
