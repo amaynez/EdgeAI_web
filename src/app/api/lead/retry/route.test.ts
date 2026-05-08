@@ -26,6 +26,38 @@ describe('POST /api/lead/retry', () => {
     assert.deepEqual(data, { error: 'Missing leadId' });
   });
 
+  test('returns 400 if leadId is an empty string', async () => {
+    // Arrange
+    const req = new Request('http://localhost/api/lead/retry', {
+      method: 'POST',
+      body: JSON.stringify({ leadId: '' }),
+    });
+
+    // Act
+    const res = await POST(req);
+    const data = await res.json();
+
+    // Assert
+    assert.strictEqual(res.status, 400);
+    assert.deepEqual(data, { error: 'Missing leadId' });
+  });
+
+  test('returns 400 if leadId is null', async () => {
+    // Arrange
+    const req = new Request('http://localhost/api/lead/retry', {
+      method: 'POST',
+      body: JSON.stringify({ leadId: null }),
+    });
+
+    // Act
+    const res = await POST(req);
+    const data = await res.json();
+
+    // Assert
+    assert.strictEqual(res.status, 400);
+    assert.deepEqual(data, { error: 'Missing leadId' });
+  });
+
   test('returns 404 if lead is not found', async () => {
     // Arrange
     const req = new Request('http://localhost/api/lead/retry', {
