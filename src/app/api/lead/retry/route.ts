@@ -5,10 +5,16 @@ import { waitUntil } from '@vercel/functions';
 
 export async function POST(request: Request) {
   try {
-    const { leadId } = await request.json();
+    const body = await request.json();
 
-    if (!leadId) {
-      return NextResponse.json({ error: 'Missing leadId' }, { status: 400 });
+    if (!body || typeof body !== 'object' || Array.isArray(body)) {
+      return NextResponse.json({ error: 'Invalid request body' }, { status: 400 });
+    }
+
+    const { leadId } = body;
+
+    if (!leadId || typeof leadId !== 'string' || leadId.trim() === '') {
+      return NextResponse.json({ error: 'Invalid or missing leadId' }, { status: 400 });
     }
 
     const { rows } = await pool.query(

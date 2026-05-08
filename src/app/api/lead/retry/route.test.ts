@@ -23,7 +23,7 @@ describe('POST /api/lead/retry', () => {
 
     // Assert
     assert.strictEqual(res.status, 400);
-    assert.deepEqual(data, { error: 'Missing leadId' });
+    assert.deepEqual(data, { error: 'Invalid or missing leadId' });
   });
 
   test('returns 400 if leadId is an empty string', async () => {
@@ -39,7 +39,7 @@ describe('POST /api/lead/retry', () => {
 
     // Assert
     assert.strictEqual(res.status, 400);
-    assert.deepEqual(data, { error: 'Missing leadId' });
+    assert.deepEqual(data, { error: 'Invalid or missing leadId' });
   });
 
   test('returns 400 if leadId is null', async () => {
@@ -55,7 +55,87 @@ describe('POST /api/lead/retry', () => {
 
     // Assert
     assert.strictEqual(res.status, 400);
-    assert.deepEqual(data, { error: 'Missing leadId' });
+    assert.deepEqual(data, { error: 'Invalid or missing leadId' });
+  });
+
+  test('returns 400 if leadId is a number', async () => {
+    // Arrange
+    const req = new Request('http://localhost/api/lead/retry', {
+      method: 'POST',
+      body: JSON.stringify({ leadId: 12345 }),
+    });
+
+    // Act
+    const res = await POST(req);
+    const data = await res.json();
+
+    // Assert
+    assert.strictEqual(res.status, 400);
+    assert.deepEqual(data, { error: 'Invalid or missing leadId' });
+  });
+
+  test('returns 400 if leadId is a boolean', async () => {
+    // Arrange
+    const req = new Request('http://localhost/api/lead/retry', {
+      method: 'POST',
+      body: JSON.stringify({ leadId: true }),
+    });
+
+    // Act
+    const res = await POST(req);
+    const data = await res.json();
+
+    // Assert
+    assert.strictEqual(res.status, 400);
+    assert.deepEqual(data, { error: 'Invalid or missing leadId' });
+  });
+
+  test('returns 400 if leadId is an array', async () => {
+    // Arrange
+    const req = new Request('http://localhost/api/lead/retry', {
+      method: 'POST',
+      body: JSON.stringify({ leadId: [] }),
+    });
+
+    // Act
+    const res = await POST(req);
+    const data = await res.json();
+
+    // Assert
+    assert.strictEqual(res.status, 400);
+    assert.deepEqual(data, { error: 'Invalid or missing leadId' });
+  });
+
+  test('returns 400 if leadId is an object', async () => {
+    // Arrange
+    const req = new Request('http://localhost/api/lead/retry', {
+      method: 'POST',
+      body: JSON.stringify({ leadId: {} }),
+    });
+
+    // Act
+    const res = await POST(req);
+    const data = await res.json();
+
+    // Assert
+    assert.strictEqual(res.status, 400);
+    assert.deepEqual(data, { error: 'Invalid or missing leadId' });
+  });
+
+  test('returns 400 if leadId contains only whitespace', async () => {
+    // Arrange
+    const req = new Request('http://localhost/api/lead/retry', {
+      method: 'POST',
+      body: JSON.stringify({ leadId: '   ' }),
+    });
+
+    // Act
+    const res = await POST(req);
+    const data = await res.json();
+
+    // Assert
+    assert.strictEqual(res.status, 400);
+    assert.deepEqual(data, { error: 'Invalid or missing leadId' });
   });
 
   test('returns 404 if lead is not found', async () => {
@@ -180,22 +260,51 @@ describe('POST /api/lead/retry', () => {
     assert.strictEqual(consoleErrorMock.mock.callCount(), 1);
   });
 
-  test('returns 500 if request body is null', async () => {
+  test('returns 400 if request body is null', async () => {
     // Arrange
     const req = new Request('http://localhost/api/lead/retry', {
       method: 'POST',
       body: JSON.stringify(null),
     });
 
-    const consoleErrorMock = mock.method(console, 'error', () => {});
+    // Act
+    const res = await POST(req);
+    const data = await res.json();
+
+    // Assert
+    assert.strictEqual(res.status, 400);
+    assert.deepEqual(data, { error: 'Invalid request body' });
+  });
+
+  test('returns 400 if request body is an array', async () => {
+    // Arrange
+    const req = new Request('http://localhost/api/lead/retry', {
+      method: 'POST',
+      body: JSON.stringify([]),
+    });
 
     // Act
     const res = await POST(req);
     const data = await res.json();
 
     // Assert
-    assert.strictEqual(res.status, 500);
-    assert.deepEqual(data, { error: 'Failed to initiate retry' });
-    assert.strictEqual(consoleErrorMock.mock.callCount(), 1);
+    assert.strictEqual(res.status, 400);
+    assert.deepEqual(data, { error: 'Invalid request body' });
+  });
+
+  test('returns 400 if request body is a string', async () => {
+    // Arrange
+    const req = new Request('http://localhost/api/lead/retry', {
+      method: 'POST',
+      body: JSON.stringify("string-body"),
+    });
+
+    // Act
+    const res = await POST(req);
+    const data = await res.json();
+
+    // Assert
+    assert.strictEqual(res.status, 400);
+    assert.deepEqual(data, { error: 'Invalid request body' });
   });
 });
