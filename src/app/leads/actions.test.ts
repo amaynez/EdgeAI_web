@@ -20,6 +20,24 @@ describe('Leads Actions', () => {
 
       const result = await fetchLeads();
       assert.deepEqual(result, { success: true, leads: mockRows });
+
+      const queryMock = pool.query as any;
+      const selectCall = queryMock.mock.calls.find((call: any) =>
+        typeof call.arguments[0] === 'string' && call.arguments[0].includes('SELECT * FROM leads')
+      );
+      assert.ok(selectCall, 'Should have called pool.query with SELECT statement');
+    });
+
+    test('returns empty leads array when no leads exist', async () => {
+      mock.method(pool, 'query', async (queryStr: string) => {
+        if (queryStr.includes('CREATE TABLE') || queryStr.includes('ALTER TABLE')) {
+          return { rowCount: 0 };
+        }
+        return { rows: [] };
+      });
+
+      const result = await fetchLeads();
+      assert.deepEqual(result, { success: true, leads: [] });
     });
 
     test('returns error when database query fails', async () => {
@@ -40,7 +58,7 @@ describe('Leads Actions', () => {
 
   describe('toggleContacted', () => {
     test('successfully updates contacted status', async () => {
-      mock.method(pool, 'query', async (queryStr: string) => {
+      const queryMock = mock.method(pool, 'query', async (queryStr: string) => {
         if (queryStr.includes('CREATE TABLE') || queryStr.includes('ALTER TABLE')) {
           return { rowCount: 0 };
         }
@@ -49,16 +67,34 @@ describe('Leads Actions', () => {
 
       const result = await toggleContacted('123', true);
       assert.deepEqual(result, { success: true });
+
+      // Find the specific UPDATE call among potential ensureLeadsTable calls
+      const updateCall = queryMock.mock.calls.find(call =>
+        typeof call.arguments[0] === 'string' && call.arguments[0].includes('UPDATE leads SET contacted = $1 WHERE id = $2')
+      );
+      assert.ok(updateCall, 'Should have called pool.query with UPDATE statement');
+      assert.deepEqual(updateCall.arguments[1], [true, '123'], 'Should pass correct parameters to query');
     });
 
     test('returns error when lead is not found (rowCount is 0)', async () => {
-      mock.method(pool, 'query', async () => {
-        return { rowCount: 0 };
+      const queryMock = mock.method(pool, 'query', async (queryStr: string) => {
+        if (queryStr.includes('CREATE TABLE') || queryStr.includes('ALTER TABLE')) {
+          return { rowCount: 0 };
+        }
+        return { rowCount: 0 }; // Simulates UPDATE finding 0 rows
       });
 
       const result = await toggleContacted('invalid-id', true);
       assert.deepEqual(result, { success: false, error: 'Lead not found' });
+
+      const updateCall = queryMock.mock.calls.find(call =>
+        typeof call.arguments[0] === 'string' && call.arguments[0].includes('UPDATE leads SET contacted = $1 WHERE id = $2')
+      );
+      assert.ok(updateCall, 'Should have called pool.query with UPDATE statement even if not found');
+      assert.deepEqual(updateCall.arguments[1], [true, 'invalid-id']);
     });
+
+
 
     test('returns error when database query fails', async () => {
       const consoleErrorMock = mock.method(console, 'error', () => {});
