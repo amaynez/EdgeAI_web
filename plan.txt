@@ -1,0 +1,12 @@
+[NIT] Test file missing explicit assertions check for `null` body.
+[WARN] Mocks aren't fully restored if an exception is thrown inside a test.
+[NIT] `consoleErrorMock` isn't fully restored if an exception is thrown inside a test.
+[NIT] Formatting/comments.
+
+I'll refactor the file slightly:
+1. Wrap mocks with try/finally to ensure cleanup, although `afterEach` mock.restoreAll() helps, wait, node:test afterEach(`mock.restoreAll()`) handles all `mock.method` global restores across tests. That is already implemented.
+2. In the "missing leadId" test, currently `{}` is passed. If `null` is passed entirely as JSON payload, `request.json()` returns `null` or throws?
+If `request.json()` is parsed from `"null"`, it returns `null`. `const { leadId } = await request.json();` will throw `TypeError: Cannot destructure property 'leadId' of 'await request.json(...)' as it is null.`
+Let's see: `JSON.stringify(null)` gives `"null"`.
+If body is `"null"`, `await request.json()` returns `null`. `const { leadId } = null` will throw `TypeError`. Wait, the error is caught by `catch (error: any)` and returns 500!
+Wait, that's a bug in the code or just unhandled edge case in the test! Let's check!

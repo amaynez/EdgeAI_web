@@ -1,0 +1,33 @@
+Wait, the prompt says: "Your objective is to review the current Pull Request, which introduces a new test suite."
+"Do not stop at just providing a review summary. You are required to act on your findings."
+"Modify the test suite files directly."
+
+Let's review `src/app/api/lead/retry/route.test.ts` for issues:
+1. [WARN] Unhandled promise rejection risk if JSON parsing fails? No, it's caught. But the body=null causes a 500 error, which could be tested, but maybe fixing the route isn't requested ("Modify the test suite files directly").
+2. [NIT] The test for 500 DB error mocks `console.error` but asserts `callCount() === 1`. This is good. But the mock isn't explicitly restored. Wait, `afterEach(() => { mock.restoreAll(); });` handles `console.error` mock too! So that's actually safe.
+3. [WARN] What if `body` is simply missing? `new Request('...', { method: 'POST' })` without a body will cause `request.json()` to throw, leading to 500. This is an edge case worth testing.
+4. [NIT] Flakiness: no implicit waits or hardcoded timestamps.
+5. [NIT] Formatting: some extra blank lines?
+
+Let's add tests for:
+- Invalid JSON body (e.g. malformed JSON string like '{ invalid json') -> Should return 500 (or whatever Next handles, it throws SyntaxError and returns 500).
+- Null JSON body (`null` entirely) -> Throws TypeError, returns 500.
+
+Also, look closely at:
+```typescript
+  test('returns 500 on database or internal error', async () => {
+    // Arrange
+    const req = new Request('http://localhost/api/lead/retry', {
+      method: 'POST',
+      body: JSON.stringify({ leadId: 'valid-id' }),
+    });
+
+    const consoleErrorMock = mock.method(console, 'error', () => {});
+    mock.method(pool, 'query', async () => {
+      throw new Error('DB Error');
+    });
+...
+```
+This is fine.
+
+Let's do some minor styling and add a test case for invalid JSON to increase "logical coverage" [WARN].
