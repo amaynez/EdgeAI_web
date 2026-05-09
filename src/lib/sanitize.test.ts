@@ -119,3 +119,20 @@ describe('sanitizeHtml', () => {
     assert.strictEqual(result, 'Safe');
   });
 });
+
+import { escapeHtml } from './sanitize.ts';
+
+describe('escapeHtml', () => {
+  test('escapes special characters', () => {
+    assert.strictEqual(escapeHtml('<script>alert("XSS & fun\'s")</script>'), '&lt;script&gt;alert(&quot;XSS &amp; fun&#x27;s&quot;)&lt;/script&gt;');
+  });
+
+  test('handles null and undefined', () => {
+    assert.strictEqual(escapeHtml(null), '');
+    assert.strictEqual(escapeHtml(undefined), '');
+  });
+
+  test('handles non-strings by stringifying', () => {
+    assert.strictEqual(escapeHtml(123), '123');
+  });
+});

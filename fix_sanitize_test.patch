@@ -1,0 +1,9 @@
+<<<<<<< SEARCH
+describe('escapeHtml', () => {
+  const { escapeHtml } = require('./sanitize.ts');
+
+  test('escapes special characters', () => {
+=======
+describe('escapeHtml', () => {
+  test('escapes special characters', () => {
+>>>>>>> REPLACE
