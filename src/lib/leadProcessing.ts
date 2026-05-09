@@ -422,7 +422,12 @@ export async function processLeadBackground(
     // --- 4. Update Database ---
     // Fail fast to prevent holding the serverless function open.
     // The cron job will automatically retry failed leads based on their status.
-    await updateLead(result);
+    try {
+      await updateLead(result);
+    } catch (dbErr: unknown) {
+      console.error(`FATAL: Could not persist AI insights for lead ${leadId}. Payload:`, { aiInsights, processingStatus });
+      throw dbErr; // Re-throw to be caught by globalErr and written to DB
+    }
   } catch (globalErr: unknown) {
     console.error('Error in background processing:', globalErr);
 
