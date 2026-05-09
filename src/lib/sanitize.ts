@@ -167,3 +167,15 @@ export function sanitizeHtml(html: string): string {
 
   return output;
 }
+
+// ---------------------------------------------------------------------------
+// HTML-escape helper — prevents XSS when interpolating user data into email HTML.
+// ---------------------------------------------------------------------------
+export function escapeHtml(value: string | undefined | null): string {
+  return String(value ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#x27;');
+}
