@@ -131,15 +131,29 @@ export async function updateLead(res: LeadUpdateResult) {
   const { leadId, aiInsights, processingStatus, apolloData, emailSentSuccessfully } = res;
 
   if (apolloData) {
-     await pool.query(
-       `UPDATE leads SET qualification = $1, processing_status = $2, apollo_data = $3${emailSentSuccessfully ? ', email_sent_at = NOW()' : ''} WHERE id = $4`,
-       [JSON.stringify(aiInsights), processingStatus, JSON.stringify(apolloData), leadId]
-     );
+    if (emailSentSuccessfully) {
+      await pool.query(
+        'UPDATE leads SET qualification = $1, processing_status = $2, apollo_data = $3, email_sent_at = NOW() WHERE id = $4',
+        [JSON.stringify(aiInsights), processingStatus, JSON.stringify(apolloData), leadId]
+      );
+    } else {
+      await pool.query(
+        'UPDATE leads SET qualification = $1, processing_status = $2, apollo_data = $3 WHERE id = $4',
+        [JSON.stringify(aiInsights), processingStatus, JSON.stringify(apolloData), leadId]
+      );
+    }
   } else {
-     await pool.query(
-       `UPDATE leads SET qualification = $1, processing_status = $2${emailSentSuccessfully ? ', email_sent_at = NOW()' : ''} WHERE id = $3`,
-       [JSON.stringify(aiInsights), processingStatus, leadId]
-     );
+    if (emailSentSuccessfully) {
+      await pool.query(
+        'UPDATE leads SET qualification = $1, processing_status = $2, email_sent_at = NOW() WHERE id = $3',
+        [JSON.stringify(aiInsights), processingStatus, leadId]
+      );
+    } else {
+      await pool.query(
+        'UPDATE leads SET qualification = $1, processing_status = $2 WHERE id = $3',
+        [JSON.stringify(aiInsights), processingStatus, leadId]
+      );
+    }
   }
 }
 
