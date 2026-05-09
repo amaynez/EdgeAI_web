@@ -17,6 +17,50 @@ describe('validation', () => {
     assert.deepEqual(validateLeadPayload(data), []);
   });
 
+  test('max-length violations return errors', () => {
+    const data = {
+      name: 'A'.repeat(101),
+      email: 'john@company.com',
+      company: 'Acme Corp',
+      role: 'CEO',
+      linkedin: 'https://www.linkedin.com/in/johndoe'
+    };
+    const errors = validateLeadPayload(data);
+    assert.ok(errors.includes('"name" must be at most 100 characters.'));
+  });
+
+  test('invalid linkedin URL format', () => {
+    const data1 = {
+      name: 'John Doe',
+      email: 'john@company.com',
+      company: 'Acme Corp',
+      role: 'CEO',
+      linkedin: 'http://www.linkedin.com/in/johndoe'
+    };
+    const data2 = {
+      name: 'John Doe',
+      email: 'john@company.com',
+      company: 'Acme Corp',
+      role: 'CEO',
+      linkedin: 'https://www.linkedin.com/company/acme'
+    };
+    const errors1 = validateLeadPayload(data1);
+    const errors2 = validateLeadPayload(data2);
+    // Since we will update LINKEDIN_REGEX to allow http and /company, these will pass
+    assert.deepEqual(errors1, []);
+    assert.deepEqual(errors2, []);
+
+    const data3 = {
+      name: 'John Doe',
+      email: 'john@company.com',
+      company: 'Acme Corp',
+      role: 'CEO',
+      linkedin: 'https://twitter.com/johndoe'
+    };
+    const errors3 = validateLeadPayload(data3);
+    assert.ok(errors3.includes('"linkedin" must be a valid LinkedIn profile URL.'));
+  });
+
   test('missing required fields return errors', () => {
     const data = {};
     const errors = validateLeadPayload(data);

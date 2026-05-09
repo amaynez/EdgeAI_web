@@ -25,4 +25,29 @@ describe('rate-limit', () => {
     }
     assert.strictEqual(isRateLimited(ip), true);
   });
+
+  test('isRateLimited resets after window expires', () => {
+    // Note: Due to lack of global fake timers in node:test, this test uses a hack to verify map pruning
+    // by mocking Date.now
+    const ip = 'test-ip-2';
+
+    let now = Date.now();
+    const originalDateNow = Date.now;
+    Date.now = () => now;
+
+    try {
+      for (let i = 0; i < 10; i++) {
+        assert.strictEqual(isRateLimited(ip), false);
+      }
+      assert.strictEqual(isRateLimited(ip), true);
+
+      // Advance time beyond RATE_LIMIT_WINDOW_MS (15 minutes)
+      now += 15 * 60 * 1000 + 1;
+
+      // Should be allowed again
+      assert.strictEqual(isRateLimited(ip), false);
+    } finally {
+      Date.now = originalDateNow;
+    }
+  });
 });

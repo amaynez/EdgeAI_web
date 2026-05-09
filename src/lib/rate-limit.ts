@@ -23,8 +23,6 @@ export function isRateLimited(ip: string): boolean {
   for (const [key, rec] of rateLimitStore) {
     if (now - rec.windowStart > RATE_LIMIT_WINDOW_MS) {
       rateLimitStore.delete(key);
-    } else {
-      break;
     }
   }
 

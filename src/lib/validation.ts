@@ -1,5 +1,5 @@
 export const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-export const LINKEDIN_REGEX = /^https:\/\/(www\.)?linkedin\.com\/in\/[a-zA-Z0-9_-]+\/?$/;
+export const LINKEDIN_REGEX = /^https?:\/\/(www\.)?linkedin\.com\/(in|company)\/[a-zA-Z0-9_.\-@]+\/?$/;
 export const GENERIC_DOMAINS = ['gmail.com', 'yahoo.com', 'hotmail.com', 'outlook.com', 'aol.com', 'icloud.com'];
 
 // Allowed enum values for the three qualification questions.
@@ -24,7 +24,7 @@ export function validateLeadPayload(data: Record<string, unknown>): string[] {
 
   // --- LinkedIn validation based on email domain ---
   let isGenericEmail = false;
-  if (typeof data.email === 'string') {
+  if (typeof data.email === 'string' && data.email.includes('@')) {
     const emailDomain = data.email.split('@')[1]?.toLowerCase();
     if (emailDomain && GENERIC_DOMAINS.includes(emailDomain)) {
       isGenericEmail = true;
@@ -68,22 +68,19 @@ export function validateLeadPayload(data: Record<string, unknown>): string[] {
     }
   }
 
-  // --- Optional qualification questions (enum + max-length) ---
-  const enumChecks: Array<{ key: string; allowed: readonly string[]; maxLen: number }> = [
-    { key: 'q1', allowed: Q1_VALUES, maxLen: 500 },
-    { key: 'q2', allowed: Q2_VALUES, maxLen: 500 },
-    { key: 'q3', allowed: Q3_VALUES, maxLen: 500 },
+  // --- Optional qualification questions (enum) ---
+  const enumChecks: Array<{ key: string; allowed: readonly string[] }> = [
+    { key: 'q1', allowed: Q1_VALUES },
+    { key: 'q2', allowed: Q2_VALUES },
+    { key: 'q3', allowed: Q3_VALUES },
   ];
 
-  for (const { key, allowed, maxLen } of enumChecks) {
+  for (const { key, allowed } of enumChecks) {
     const val = data[key];
     if (val === undefined || val === null || val === '') continue; // optional
     if (typeof val !== 'string') {
       errors.push(`"${key}" must be a string.`);
       continue;
-    }
-    if (val.length > maxLen) {
-      errors.push(`"${key}" must be at most ${maxLen} characters.`);
     }
     if (!allowed.includes(val as string)) {
       errors.push(`"${key}" must be one of: ${allowed.join(', ')}.`);

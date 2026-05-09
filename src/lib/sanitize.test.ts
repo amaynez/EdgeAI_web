@@ -133,6 +133,7 @@ describe('escapeHtml', () => {
   });
 
   test('handles non-strings by stringifying', () => {
+    // @ts-ignore
     assert.strictEqual(escapeHtml(123), '123');
   });
 });
