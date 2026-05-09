@@ -62,6 +62,7 @@ export async function GET(request: Request) {
           apollo_data: row.apollo_data,
           email_sent_at: row.email_sent_at,
           contacted: row.contacted,
+
         },
         skipUpdate: true
       });
