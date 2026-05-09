@@ -419,26 +419,10 @@ export async function processLeadBackground(
       return result;
     }
 
-    // --- 4. Update Database with Retry Logic ---
-    let retries = 3;
-    let delay = 1000;
-
-    while (retries > 0) {
-      try {
-        await updateLead(result);
-        break; // Success
-      } catch (dbErr: any) {
-        console.error(`Failed to update lead (Attempt ${4 - retries}/3):`, dbErr);
-        retries -= 1;
-        if (retries === 0) {
-          console.error(`FATAL: Could not persist AI insights for lead ${leadId} after 3 attempts. Payload:`, { aiInsights, processingStatus });
-          // In a production system, you would enqueue this to a dead-letter queue or persistent store here.
-        } else {
-          await new Promise(res => setTimeout(res, delay));
-          delay *= 2; // Exponential backoff
-        }
-      }
-    }
+    // --- 4. Update Database ---
+    // Fail fast to prevent holding the serverless function open.
+    // The cron job will automatically retry failed leads based on their status.
+    await updateLead(result);
   } catch (globalErr: unknown) {
     console.error('Error in background processing:', globalErr);
 
