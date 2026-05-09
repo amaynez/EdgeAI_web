@@ -1,6 +1,5 @@
 import { pool } from '@/lib/db';
 import { LeadUpdateResult } from '@/lib/types';
-import { ApolloData } from '@/lib/apollo/client';
 
 export interface ExistingLeadRecord {
   qualification?: any;
@@ -31,29 +30,23 @@ export async function insertLeadErrorLog(leadId: string, errorMessage: string): 
 export async function updateLeadRecord(res: LeadUpdateResult): Promise<void> {
   const { leadId, aiInsights, processingStatus, apolloData, emailSentSuccessfully } = res;
 
+  const setClauses = [
+    'qualification = $1',
+    'processing_status = $2'
+  ];
+  const values: any[] = [JSON.stringify(aiInsights), processingStatus];
+
   if (apolloData) {
-    if (emailSentSuccessfully) {
-      await pool.query(
-        'UPDATE leads SET qualification = $1, processing_status = $2, apollo_data = $3, email_sent_at = NOW() WHERE id = $4',
-        [JSON.stringify(aiInsights), processingStatus, JSON.stringify(apolloData), leadId]
-      );
-    } else {
-      await pool.query(
-        'UPDATE leads SET qualification = $1, processing_status = $2, apollo_data = $3 WHERE id = $4',
-        [JSON.stringify(aiInsights), processingStatus, JSON.stringify(apolloData), leadId]
-      );
-    }
-  } else {
-    if (emailSentSuccessfully) {
-      await pool.query(
-        'UPDATE leads SET qualification = $1, processing_status = $2, email_sent_at = NOW() WHERE id = $3',
-        [JSON.stringify(aiInsights), processingStatus, leadId]
-      );
-    } else {
-      await pool.query(
-        'UPDATE leads SET qualification = $1, processing_status = $2 WHERE id = $3',
-        [JSON.stringify(aiInsights), processingStatus, leadId]
-      );
-    }
+    values.push(JSON.stringify(apolloData));
+    setClauses.push(`apollo_data = ${values.length}`);
   }
+
+  if (emailSentSuccessfully) {
+    setClauses.push('email_sent_at = NOW()');
+  }
+
+  values.push(leadId);
+  const query = `UPDATE leads SET ${setClauses.join(', ')} WHERE id = ${values.length}`;
+
+  await pool.query(query, values);
 }

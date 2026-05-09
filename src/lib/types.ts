@@ -30,10 +30,22 @@ export interface PersonaConfig {
   };
 }
 
+export interface ApolloData {
+  raw_data: any;
+  compressed_data: {
+    title?: string;
+    seniority?: string;
+    primary_phone?: string;
+    estimated_num_employees?: number;
+    industry?: string;
+    technology_names?: string[];
+  };
+}
+
 export interface LeadUpdateResult {
   leadId: string;
   aiInsights: AIInsights;
   processingStatus: string;
-  apolloData: any | null; // using any to avoid cyclic dependency for now, or define ApolloData here
+  apolloData: ApolloData | null;
   emailSentSuccessfully: boolean;
 }

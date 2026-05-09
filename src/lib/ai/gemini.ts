@@ -3,8 +3,6 @@ import { sanitizeHtml } from '@/lib/sanitize';
 import { AIInsights, PersonaConfig } from '@/lib/types';
 import { LeadData } from '@/lib/types';
 
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
-
 export interface AIEnrichmentResult {
   aiInsights: AIInsights | null;
   failed: boolean;
@@ -16,10 +14,13 @@ export async function generateAIInsights(
   leadData: LeadData,
   apolloDataStr: string
 ): Promise<AIEnrichmentResult> {
-  if (!process.env.GEMINI_API_KEY) {
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) {
     console.warn('GEMINI_API_KEY missing, skipping AI insights');
     return { aiInsights: null, failed: true, error: 'missing GEMINI_API_KEY' };
   }
+
+  const genAI = new GoogleGenerativeAI(apiKey);
 
   const model = genAI.getGenerativeModel({
     model: 'gemini-flash-lite-latest',

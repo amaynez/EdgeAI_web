@@ -1,14 +1,4 @@
-export interface ApolloData {
-  raw_data: any;
-  compressed_data: {
-    title?: string;
-    seniority?: string;
-    primary_phone?: string;
-    estimated_num_employees?: number;
-    industry?: string;
-    technology_names?: string[];
-  };
-}
+import { ApolloData } from '@/lib/types';
 
 export interface ApolloEnrichmentResult {
   dataStr: string;
@@ -22,13 +12,18 @@ const sleep = (ms: number, signal?: AbortSignal) => new Promise((resolve, reject
     return reject(new Error('AbortError'));
   }
 
-  const timer = setTimeout(resolve, ms);
+  const timer = setTimeout(() => {
+    if (signal) signal.removeEventListener('abort', abortHandler);
+    resolve(undefined);
+  }, ms);
+
+  const abortHandler = () => {
+    clearTimeout(timer);
+    reject(new Error('AbortError'));
+  };
 
   if (signal) {
-    signal.addEventListener('abort', () => {
-      clearTimeout(timer);
-      reject(new Error('AbortError'));
-    });
+    signal.addEventListener('abort', abortHandler);
   }
 });
 
