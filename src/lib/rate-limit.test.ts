@@ -24,6 +24,16 @@ describe('rate-limit', () => {
 
     const req4 = new Request('http://localhost');
     assert.strictEqual(getClientIp(req4), 'unknown');
+
+    const req5 = new Request('http://localhost', {
+      headers: { 'x-real-ip': '   ' }
+    });
+    assert.strictEqual(getClientIp(req5), 'unknown');
+
+    const req6 = new Request('http://localhost', {
+      headers: { 'x-forwarded-for': ' ,  ' }
+    });
+    assert.strictEqual(getClientIp(req6), 'unknown');
   });
 
   test('isRateLimited allows up to 10 requests', () => {
