@@ -7,15 +7,33 @@ describe('rate-limit', () => {
     const req1 = new Request('http://localhost', {
       headers: { 'x-forwarded-for': '1.2.3.4, 5.6.7.8' }
     });
-    assert.strictEqual(getClientIp(req1), '1.2.3.4');
+    assert.strictEqual(getClientIp(req1), '5.6.7.8', 'Should take the last IP from x-forwarded-for');
 
     const req2 = new Request('http://localhost', {
       headers: { 'x-real-ip': '2.3.4.5' }
     });
     assert.strictEqual(getClientIp(req2), '2.3.4.5');
 
-    const req3 = new Request('http://localhost');
-    assert.strictEqual(getClientIp(req3), 'unknown');
+    const req3 = new Request('http://localhost', {
+      headers: {
+        'x-forwarded-for': '1.2.3.4, 5.6.7.8',
+        'x-real-ip': '9.9.9.9'
+      }
+    });
+    assert.strictEqual(getClientIp(req3), '9.9.9.9', 'Should prioritize x-real-ip over x-forwarded-for');
+
+    const req4 = new Request('http://localhost');
+    assert.strictEqual(getClientIp(req4), 'unknown');
+
+    const req5 = new Request('http://localhost', {
+      headers: { 'x-real-ip': '   ' }
+    });
+    assert.strictEqual(getClientIp(req5), 'unknown');
+
+    const req6 = new Request('http://localhost', {
+      headers: { 'x-forwarded-for': ' ,  ' }
+    });
+    assert.strictEqual(getClientIp(req6), 'unknown');
   });
 
   test('isRateLimited allows up to 10 requests', () => {

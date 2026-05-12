@@ -10,34 +10,54 @@ interface RateEntry { count: number; windowStart: number }
 const rateLimitStore = new Map<string, RateEntry>();
 
 export function getClientIp(request: Request): string {
-  // Vercel / common reverse-proxy headers
+  // Prioritize x-real-ip as it is provided by Vercel's edge and is more resistant to spoofing
+  // than x-forwarded-for which can be manipulated by the client.
+  const realIp = request.headers.get('x-real-ip');
+  if (realIp?.trim()) return realIp.trim();
+
   const forwarded = request.headers.get('x-forwarded-for');
-  if (forwarded) return forwarded.split(',')[0].trim();
-  return request.headers.get('x-real-ip') ?? 'unknown';
+  if (forwarded?.trim()) {
+    // When behind a single trusted proxy like Vercel, the last IP in the chain
+    // is the one that connected to the proxy. We take the last one to avoid
+    // trusting spoofed IPs prepended by the client.
+    const ips = forwarded.split(',');
+    const lastIp = ips[ips.length - 1].trim();
+    if (lastIp) return lastIp;
+  }
+
+  return 'unknown';
 }
 
 export function isRateLimited(ip: string): boolean {
   const now = Date.now();
 
   // Prune stale entries to prevent unbounded Map growth.
+  // Map maintains insertion order. Stale entries will always be at the front.
   for (const [key, rec] of rateLimitStore) {
     if (now - rec.windowStart > RATE_LIMIT_WINDOW_MS) {
       rateLimitStore.delete(key);
+    } else {
+      // Optimization: Once we hit a non-stale entry, we can stop because
+      // following entries are guaranteed to be newer.
+      break;
     }
   }
 
   const entry = rateLimitStore.get(ip);
 
   if (!entry || now - entry.windowStart > RATE_LIMIT_WINDOW_MS) {
+    // New entry or expired window: add to end of insertion order
+    if (entry) rateLimitStore.delete(ip);
     rateLimitStore.set(ip, { count: 1, windowStart: now });
     return false;
   }
 
   if (entry.count >= RATE_LIMIT_MAX) return true;
 
-  // Update in-memory count and move entry to end of insertion order for O(1) prune logic
-  const updatedEntry = { count: entry.count + 1, windowStart: entry.windowStart };
-  rateLimitStore.delete(ip);
-  rateLimitStore.set(ip, updatedEntry);
+  // Update in-memory count.
+  // Note: We DO NOT delete/re-set here because that would move the entry
+  // to the end of the Map, breaking the time-based ordering required for
+  // the amortized O(1) pruning optimization above.
+  entry.count += 1;
   return false;
 }
