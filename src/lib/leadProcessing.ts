@@ -1,7 +1,7 @@
 import { pool } from '@/lib/db';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import nodemailer from 'nodemailer';
-import { sanitizeHtml } from '@/lib/sanitize';
+import { sanitizeHtml, escapeHtml } from '@/lib/sanitize';
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
 
@@ -14,16 +14,6 @@ interface LeadData {
   q2?: string | null;
   q3?: string | null;
   linkedin?: string | null;
-}
-
-// HTML-escape helper — prevents XSS when interpolating user data into email HTML.
-function escapeHtml(value: string | undefined | null): string {
-  return String(value ?? '')
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#x27;');
 }
 
 export interface AIInsights {
