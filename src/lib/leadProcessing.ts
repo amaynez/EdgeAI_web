@@ -121,7 +121,7 @@ export async function updateLead(res: LeadUpdateResult) {
   const { leadId, aiInsights, processingStatus, apolloData, emailSentSuccessfully } = res;
 
   const sets = ['qualification = $1', 'processing_status = $2'];
-  const params: any[] = [JSON.stringify(aiInsights), processingStatus];
+  const params: (string | number | null)[] = [JSON.stringify(aiInsights), processingStatus];
 
   if (apolloData) {
     params.push(JSON.stringify(apolloData));
@@ -138,14 +138,16 @@ export async function updateLead(res: LeadUpdateResult) {
   await pool.query(query, params);
 }
 
+interface PartialLeadRow {
+  apollo_data?: ApolloData | null;
+  email_sent_at?: Date | null;
+  contacted?: boolean;
+}
+
 /**
  * Extract context string and sent status from existing lead data to avoid redundant API calls.
  */
-function extractExistingLeadContext(data: {
-  apollo_data?: any;
-  email_sent_at?: Date | null;
-  contacted?: boolean;
-} | undefined): { existingApolloDataStr: string | null; emailAlreadySent: boolean } {
+function extractExistingLeadContext(data: PartialLeadRow | undefined): { existingApolloDataStr: string | null; emailAlreadySent: boolean } {
   if (!data) return { existingApolloDataStr: null, emailAlreadySent: false };
 
   const emailAlreadySent = !!(data.email_sent_at || data.contacted);
@@ -165,11 +167,7 @@ export async function processLeadBackground(
   leadId: string,
   leadData: LeadData,
   options: {
-    existingData?: {
-      apollo_data?: any;
-      email_sent_at?: Date | null;
-      contacted?: boolean;
-    };
+    existingData?: PartialLeadRow;
     skipUpdate?: boolean;
     persona?: Persona;
   } = {}
@@ -281,12 +279,17 @@ export async function processLeadBackground(
 
       const prompt = config.prompt({ ...leadData, apolloDataStr });
 
-      try {
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 seconds timeout
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 seconds timeout
 
-        const result = await model.generateContent(prompt, { signal: controller.signal });
-        clearTimeout(timeoutId);
+      try {
+        const result = await Promise.race([
+          model.generateContent(prompt),
+          new Promise<never>((_, reject) => {
+            controller.signal.addEventListener('abort', () => reject(new Error('AbortError: Gemini request timed out')));
+          })
+        ]);
+
         const responseText = result.response.text().replace(/```json/gi, '').replace(/```/g, '').trim();
 
         try {
@@ -297,15 +300,23 @@ export async function processLeadBackground(
             analysis:  typeof parsed.analysis === 'string'  ? parsed.analysis  : 'AI Analysis Failed or Unavailable.',
             draftEmail: sanitizeHtml(parsed.draftEmail ?? ''),
           };
-        } catch (e: any) {
+        } catch (e: unknown) {
           console.error('Failed to parse Gemini output as JSON:', responseText);
           geminiFailed = true;
           geminiError = 'failed to parse Gemini output';
         }
-      } catch (e: any) {
-         console.error('Failed to generate Gemini content:', e);
-         geminiFailed = true;
-         geminiError = e.message || 'Gemini API call failed';
+      } catch (e: unknown) {
+        const isAbort = e instanceof Error && (e.message.includes('AbortError') || e.name === 'AbortError');
+        if (isAbort) {
+          console.warn('Gemini API timeout exceeded (15s)');
+          geminiError = 'timeout';
+        } else {
+          console.error('Failed to generate Gemini content:', e);
+          geminiError = e instanceof Error ? e.message : 'Gemini API call failed';
+        }
+        geminiFailed = true;
+      } finally {
+        clearTimeout(timeoutId);
       }
 
     } else {
