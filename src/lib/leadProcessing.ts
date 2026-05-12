@@ -120,31 +120,45 @@ export interface LeadUpdateResult {
 export async function updateLead(res: LeadUpdateResult) {
   const { leadId, aiInsights, processingStatus, apolloData, emailSentSuccessfully } = res;
 
+  const sets = ['qualification = $1', 'processing_status = $2'];
+  const params: any[] = [JSON.stringify(aiInsights), processingStatus];
+
   if (apolloData) {
-    if (emailSentSuccessfully) {
-      await pool.query(
-        'UPDATE leads SET qualification = $1, processing_status = $2, apollo_data = $3, email_sent_at = NOW() WHERE id = $4',
-        [JSON.stringify(aiInsights), processingStatus, JSON.stringify(apolloData), leadId]
-      );
-    } else {
-      await pool.query(
-        'UPDATE leads SET qualification = $1, processing_status = $2, apollo_data = $3 WHERE id = $4',
-        [JSON.stringify(aiInsights), processingStatus, JSON.stringify(apolloData), leadId]
-      );
-    }
-  } else {
-    if (emailSentSuccessfully) {
-      await pool.query(
-        'UPDATE leads SET qualification = $1, processing_status = $2, email_sent_at = NOW() WHERE id = $3',
-        [JSON.stringify(aiInsights), processingStatus, leadId]
-      );
-    } else {
-      await pool.query(
-        'UPDATE leads SET qualification = $1, processing_status = $2 WHERE id = $3',
-        [JSON.stringify(aiInsights), processingStatus, leadId]
-      );
+    params.push(JSON.stringify(apolloData));
+    sets.push(`apollo_data = $${params.length}`);
+  }
+
+  if (emailSentSuccessfully) {
+    sets.push('email_sent_at = NOW()');
+  }
+
+  params.push(leadId);
+  const query = `UPDATE leads SET ${sets.join(', ')} WHERE id = $${params.length}`;
+
+  await pool.query(query, params);
+}
+
+/**
+ * Extract context string and sent status from existing lead data to avoid redundant API calls.
+ */
+function extractExistingLeadContext(data: {
+  apollo_data?: any;
+  email_sent_at?: Date | null;
+  contacted?: boolean;
+} | undefined): { existingApolloDataStr: string | null; emailAlreadySent: boolean } {
+  if (!data) return { existingApolloDataStr: null, emailAlreadySent: false };
+
+  const emailAlreadySent = !!(data.email_sent_at || data.contacted);
+  let existingApolloDataStr = null;
+
+  if (data.apollo_data && data.apollo_data.raw_data) {
+    const compressed = data.apollo_data.compressed_data;
+    if (compressed) {
+      existingApolloDataStr = `\nApollo.io Enrichment Data (for context):\n${JSON.stringify(compressed, null, 2)}`;
     }
   }
+
+  return { existingApolloDataStr, emailAlreadySent };
 }
 
 export async function processLeadBackground(
@@ -174,36 +188,17 @@ export async function processLeadBackground(
   let processingStatus = 'completed';
 
   try {
-    // --- 0. Check if existing apollo_data exists (e.g. from a prior run) ---
+    // --- 0. Check if existing context exists (e.g. from a prior run) ---
     let existingApolloDataStr = null;
     let emailAlreadySent = false;
 
     if (options.existingData) {
-      const { apollo_data, email_sent_at, contacted } = options.existingData;
-      if (email_sent_at || contacted) {
-        emailAlreadySent = true;
-      }
-      if (apollo_data && apollo_data.raw_data) {
-        const data = apollo_data.compressed_data;
-        if (data) {
-          existingApolloDataStr = `\nApollo.io Enrichment Data (for context):\n${JSON.stringify(data, null, 2)}`;
-        }
-      }
+      ({ existingApolloDataStr, emailAlreadySent } = extractExistingLeadContext(options.existingData));
     } else {
       try {
         const { rows } = await pool.query(`SELECT apollo_data, email_sent_at, contacted FROM leads WHERE id = $1`, [leadId]);
         if (rows.length > 0) {
-          if (rows[0].email_sent_at || rows[0].contacted) {
-              emailAlreadySent = true;
-          }
-
-          if (rows[0].apollo_data && rows[0].apollo_data.raw_data) {
-            // Build the string from the saved data to avoid recalling Apollo
-            const data = rows[0].apollo_data.compressed_data;
-            if (data) {
-              existingApolloDataStr = `\nApollo.io Enrichment Data (for context):\n${JSON.stringify(data, null, 2)}`;
-            }
-          }
+          ({ existingApolloDataStr, emailAlreadySent } = extractExistingLeadContext(rows[0]));
         }
       } catch (err: unknown) {
         console.error('Error fetching existing lead data:', err);
@@ -287,7 +282,11 @@ export async function processLeadBackground(
       const prompt = config.prompt({ ...leadData, apolloDataStr });
 
       try {
-        const result = await model.generateContent(prompt);
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 seconds timeout
+
+        const result = await model.generateContent(prompt, { signal: controller.signal });
+        clearTimeout(timeoutId);
         const responseText = result.response.text().replace(/```json/gi, '').replace(/```/g, '').trim();
 
         try {
