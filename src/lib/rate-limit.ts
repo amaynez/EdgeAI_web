@@ -10,10 +10,21 @@ interface RateEntry { count: number; windowStart: number }
 const rateLimitStore = new Map<string, RateEntry>();
 
 export function getClientIp(request: Request): string {
-  // Vercel / common reverse-proxy headers
+  // Prioritize x-real-ip as it is provided by Vercel's edge and is more resistant to spoofing
+  // than x-forwarded-for which can be manipulated by the client.
+  const realIp = request.headers.get('x-real-ip');
+  if (realIp) return realIp;
+
   const forwarded = request.headers.get('x-forwarded-for');
-  if (forwarded) return forwarded.split(',')[0].trim();
-  return request.headers.get('x-real-ip') ?? 'unknown';
+  if (forwarded) {
+    // When behind a single trusted proxy like Vercel, the last IP in the chain
+    // is the one that connected to the proxy. We take the last one to avoid
+    // trusting spoofed IPs prepended by the client.
+    const ips = forwarded.split(',');
+    return ips[ips.length - 1].trim();
+  }
+
+  return 'unknown';
 }
 
 export function isRateLimited(ip: string): boolean {
