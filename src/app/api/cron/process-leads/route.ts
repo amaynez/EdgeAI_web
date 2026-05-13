@@ -67,9 +67,8 @@ export async function GET(request: Request) {
       });
     }));
 
-    // Update the processed leads
-    for (let i = 0; i < results.length; i++) {
-      const settledResult = results[i];
+    // Update the processed leads concurrently
+    await Promise.all(results.map(async (settledResult, i) => {
       const leadId = rows[i].id;
 
       if (settledResult.status === 'fulfilled') {
@@ -102,7 +101,7 @@ export async function GET(request: Request) {
           console.error(`Failed to record error for lead ${leadId}:`, dbErr);
         }
       }
-    }
+    }));
 
     return NextResponse.json({ success: true, processed: rows.length });
   } catch (error: any) {
