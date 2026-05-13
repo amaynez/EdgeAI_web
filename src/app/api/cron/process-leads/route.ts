@@ -67,6 +67,21 @@ export async function GET(request: Request) {
       });
     }));
 
+    /**
+     * Helper to record a processing error in the database.
+     * Prevents leads from being stuck in 'pending' status.
+     */
+    const recordError = async (leadId: string, errorMsg: string) => {
+      try {
+        await pool.query(
+          `UPDATE leads SET processing_status = $1 WHERE id = $2`,
+          [errorMsg, leadId]
+        );
+      } catch (dbErr) {
+        console.error(`Failed to record error for lead ${leadId}:`, dbErr);
+      }
+    };
+
     // Update the processed leads concurrently
     await Promise.all(results.map(async (settledResult, i) => {
       const leadId = rows[i].id;
@@ -76,30 +91,21 @@ export async function GET(request: Request) {
         if (res) {
           try {
             await updateLead(res);
-          } catch (updateErr: any) {
-            console.error(`Failed to update lead ${leadId}:`, updateErr);
-            // Record failure even if updateLead itself fails (e.g. DB connection issues)
-            try {
-              await pool.query(
-                `UPDATE leads SET processing_status = $1 WHERE id = $2`,
-                [`error: update failed (${updateErr?.message || 'Unknown error'})`, leadId]
-              );
-            } catch (dbErr) {
-              console.error(`Failed to record update error for lead ${leadId}:`, dbErr);
-            }
+          } catch (err: unknown) {
+            const msg = err instanceof Error ? err.message : 'Unknown error';
+            console.error(`Failed to update lead ${leadId}:`, err);
+            await recordError(leadId, `error: update failed (${msg})`);
           }
+        } else {
+          // If fulfilled but no result returned, mark as error to prevent 'pending' leak
+          await recordError(leadId, 'error: processing returned no result');
         }
       } else {
         // Handle failure: Update lead status to error
-        console.error(`Processing failed for lead ${leadId}:`, settledResult.reason);
-        try {
-          await pool.query(
-            `UPDATE leads SET processing_status = $1 WHERE id = $2`,
-            [`error: ${settledResult.reason?.message || 'Unknown error'}`, leadId]
-          );
-        } catch (dbErr) {
-          console.error(`Failed to record error for lead ${leadId}:`, dbErr);
-        }
+        const reason = settledResult.reason;
+        const msg = (reason instanceof Error ? reason.message : reason?.message) || 'Unknown error';
+        console.error(`Processing failed for lead ${leadId}:`, reason);
+        await recordError(leadId, `error: ${msg}`);
       }
     }));
 
