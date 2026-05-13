@@ -1,7 +1,7 @@
 import { pool } from '@/lib/db';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import nodemailer from 'nodemailer';
-import { sanitizeHtml } from '@/lib/sanitize';
+import { sanitizeHtml, escapeHtml } from '@/lib/sanitize';
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
 
@@ -14,16 +14,6 @@ interface LeadData {
   q2?: string | null;
   q3?: string | null;
   linkedin?: string | null;
-}
-
-// HTML-escape helper — prevents XSS when interpolating user data into email HTML.
-function escapeHtml(value: string | undefined | null): string {
-  return String(value ?? '')
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#x27;');
 }
 
 export interface AIInsights {
@@ -130,42 +120,54 @@ export interface LeadUpdateResult {
 export async function updateLead(res: LeadUpdateResult) {
   const { leadId, aiInsights, processingStatus, apolloData, emailSentSuccessfully } = res;
 
+  const sets = ['qualification = $1', 'processing_status = $2'];
+  const params: (string | number | null)[] = [JSON.stringify(aiInsights), processingStatus];
+
   if (apolloData) {
-    if (emailSentSuccessfully) {
-      await pool.query(
-        'UPDATE leads SET qualification = $1, processing_status = $2, apollo_data = $3, email_sent_at = NOW() WHERE id = $4',
-        [JSON.stringify(aiInsights), processingStatus, JSON.stringify(apolloData), leadId]
-      );
-    } else {
-      await pool.query(
-        'UPDATE leads SET qualification = $1, processing_status = $2, apollo_data = $3 WHERE id = $4',
-        [JSON.stringify(aiInsights), processingStatus, JSON.stringify(apolloData), leadId]
-      );
-    }
-  } else {
-    if (emailSentSuccessfully) {
-      await pool.query(
-        'UPDATE leads SET qualification = $1, processing_status = $2, email_sent_at = NOW() WHERE id = $3',
-        [JSON.stringify(aiInsights), processingStatus, leadId]
-      );
-    } else {
-      await pool.query(
-        'UPDATE leads SET qualification = $1, processing_status = $2 WHERE id = $3',
-        [JSON.stringify(aiInsights), processingStatus, leadId]
-      );
+    params.push(JSON.stringify(apolloData));
+    sets.push(`apollo_data = $${params.length}`);
+  }
+
+  if (emailSentSuccessfully) {
+    sets.push('email_sent_at = NOW()');
+  }
+
+  params.push(leadId);
+  const query = `UPDATE leads SET ${sets.join(', ')} WHERE id = $${params.length}`;
+
+  await pool.query(query, params);
+}
+
+interface PartialLeadRow {
+  apollo_data?: ApolloData | null;
+  email_sent_at?: Date | null;
+  contacted?: boolean;
+}
+
+/**
+ * Extract context string and sent status from existing lead data to avoid redundant API calls.
+ */
+function extractExistingLeadContext(data: PartialLeadRow | undefined): { existingApolloDataStr: string | null; emailAlreadySent: boolean } {
+  if (!data) return { existingApolloDataStr: null, emailAlreadySent: false };
+
+  const emailAlreadySent = !!(data.email_sent_at || data.contacted);
+  let existingApolloDataStr = null;
+
+  if (data.apollo_data && data.apollo_data.raw_data) {
+    const compressed = data.apollo_data.compressed_data;
+    if (compressed) {
+      existingApolloDataStr = `\nApollo.io Enrichment Data (for context):\n${JSON.stringify(compressed, null, 2)}`;
     }
   }
+
+  return { existingApolloDataStr, emailAlreadySent };
 }
 
 export async function processLeadBackground(
   leadId: string,
   leadData: LeadData,
   options: {
-    existingData?: {
-      apollo_data?: any;
-      email_sent_at?: Date | null;
-      contacted?: boolean;
-    };
+    existingData?: PartialLeadRow;
     skipUpdate?: boolean;
     persona?: Persona;
   } = {}
@@ -184,36 +186,17 @@ export async function processLeadBackground(
   let processingStatus = 'completed';
 
   try {
-    // --- 0. Check if existing apollo_data exists (e.g. from a prior run) ---
+    // --- 0. Check if existing context exists (e.g. from a prior run) ---
     let existingApolloDataStr = null;
     let emailAlreadySent = false;
 
     if (options.existingData) {
-      const { apollo_data, email_sent_at, contacted } = options.existingData;
-      if (email_sent_at || contacted) {
-        emailAlreadySent = true;
-      }
-      if (apollo_data && apollo_data.raw_data) {
-        const data = apollo_data.compressed_data;
-        if (data) {
-          existingApolloDataStr = `\nApollo.io Enrichment Data (for context):\n${JSON.stringify(data, null, 2)}`;
-        }
-      }
+      ({ existingApolloDataStr, emailAlreadySent } = extractExistingLeadContext(options.existingData));
     } else {
       try {
         const { rows } = await pool.query(`SELECT apollo_data, email_sent_at, contacted FROM leads WHERE id = $1`, [leadId]);
         if (rows.length > 0) {
-          if (rows[0].email_sent_at || rows[0].contacted) {
-              emailAlreadySent = true;
-          }
-
-          if (rows[0].apollo_data && rows[0].apollo_data.raw_data) {
-            // Build the string from the saved data to avoid recalling Apollo
-            const data = rows[0].apollo_data.compressed_data;
-            if (data) {
-              existingApolloDataStr = `\nApollo.io Enrichment Data (for context):\n${JSON.stringify(data, null, 2)}`;
-            }
-          }
+          ({ existingApolloDataStr, emailAlreadySent } = extractExistingLeadContext(rows[0]));
         }
       } catch (err: unknown) {
         console.error('Error fetching existing lead data:', err);
@@ -296,8 +279,17 @@ export async function processLeadBackground(
 
       const prompt = config.prompt({ ...leadData, apolloDataStr });
 
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 seconds timeout
+
       try {
-        const result = await model.generateContent(prompt);
+        const result = await Promise.race([
+          model.generateContent(prompt),
+          new Promise<never>((_, reject) => {
+            controller.signal.addEventListener('abort', () => reject(new Error('AbortError: Gemini request timed out')));
+          })
+        ]);
+
         const responseText = result.response.text().replace(/```json/gi, '').replace(/```/g, '').trim();
 
         try {
@@ -308,15 +300,23 @@ export async function processLeadBackground(
             analysis:  typeof parsed.analysis === 'string'  ? parsed.analysis  : 'AI Analysis Failed or Unavailable.',
             draftEmail: sanitizeHtml(parsed.draftEmail ?? ''),
           };
-        } catch (e: any) {
+        } catch (e: unknown) {
           console.error('Failed to parse Gemini output as JSON:', responseText);
           geminiFailed = true;
           geminiError = 'failed to parse Gemini output';
         }
-      } catch (e: any) {
-         console.error('Failed to generate Gemini content:', e);
-         geminiFailed = true;
-         geminiError = e.message || 'Gemini API call failed';
+      } catch (e: unknown) {
+        const isAbort = e instanceof Error && (e.message.includes('AbortError') || e.name === 'AbortError');
+        if (isAbort) {
+          console.warn('Gemini API timeout exceeded (15s)');
+          geminiError = 'timeout';
+        } else {
+          console.error('Failed to generate Gemini content:', e);
+          geminiError = e instanceof Error ? e.message : 'Gemini API call failed';
+        }
+        geminiFailed = true;
+      } finally {
+        clearTimeout(timeoutId);
       }
 
     } else {
