@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { pool } from '@/lib/db';
-import { processLeadBackground, updateLead } from '@/lib/leadProcessing';
+import { processLeadBackground } from '@/lib/leadProcessing';
+import { updateLead } from '@/lib/db/queries';
 
 export const dynamic = 'force-dynamic';
 
