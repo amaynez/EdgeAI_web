@@ -1,4 +1,4 @@
-import { pool } from '@/lib/db';
+
 import { LeadData, AIInsights, ApolloData, Persona, PersonaConfig } from './types/lead';
 import { fetchApolloEnrichment } from './apollo/client';
 import { generateAIInsights } from './ai/gemini';
@@ -73,7 +73,6 @@ Assessment Answers:
 function extractExistingLeadContext(data: PartialLeadRow | undefined): { existingApolloDataStr: string | null; emailAlreadySent: boolean } {
   if (!data) return { existingApolloDataStr: null, emailAlreadySent: false };
 
-  const emailAlreadySent = !!(data.email_sent_at || data.contacted);
   let existingApolloDataStr = null;
 
   if (data.apollo_data && data.apollo_data.raw_data) {
@@ -107,10 +106,7 @@ export async function processLeadBackground(
     let emailAlreadySent = false;
 
     if (options.existingData) {
-      ({ existingApolloDataStr, emailAlreadySent } = extractExistingLeadContext(options.existingData));
     } else {
-      const dbRow = await fetchLeadById(leadId);
-      ({ existingApolloDataStr, emailAlreadySent } = extractExistingLeadContext(dbRow || undefined));
     }
 
     // --- 1. Apollo.io Enrichment ---
@@ -119,7 +115,6 @@ export async function processLeadBackground(
     let apolloFailed = false;
 
     if (!existingApolloDataStr) {
-      const apolloRes = await fetchApolloEnrichment(email, linkedin);
 
       if (apolloRes.ok) {
         apolloDataStr = apolloRes.apolloDataStr;
@@ -127,7 +122,6 @@ export async function processLeadBackground(
       } else {
         apolloFailed = true;
         if (!apolloRes.isMissingKey) {
-          console.warn('Apollo fetch failed:', apolloRes.reason);
         }
       }
     } else if (!process.env.APOLLO_API_KEY) {
@@ -146,18 +140,13 @@ export async function processLeadBackground(
       draftEmail: 'Failed to generate draft email.',
     };
 
-    const prompt = config.prompt({ ...leadData, apolloDataStr });
-    const geminiRes = await generateAIInsights(config.systemInstruction, prompt);
 
     if (geminiRes.ok) {
       aiInsights = geminiRes.value;
     } else {
       geminiFailed = true;
-      geminiError = geminiRes.timeout ? 'timeout' : (geminiRes.isMissingKey ? 'missing GEMINI_API_KEY' : String(geminiRes.reason));
       if (!geminiRes.isMissingKey) {
-        console.error('Gemini failure:', geminiRes.reason);
       } else {
-        console.warn('GEMINI_API_KEY missing, skipping AI insights');
       }
     }
 
@@ -177,16 +166,12 @@ export async function processLeadBackground(
     let emailSentSuccessfully = false;
 
     if (!geminiFailed && !emailAlreadySent) {
-      const emailContent = config.emailContent(aiInsights, company);
-      const emailRes = await sendLeadEmail(leadData, aiInsights, emailContent);
 
       if (emailRes.ok) {
         emailSentSuccessfully = true;
       } else {
         if (emailRes.isMissingCreds) {
-          console.warn('GMAIL_USER or GMAIL_APP_PASSWORD missing. Skipping email.');
         } else {
-          console.error('Failed to send email:', emailRes.reason);
         }
       }
     }
@@ -205,13 +190,10 @@ export async function processLeadBackground(
 
     // --- 4. Update Database ---
     try {
-      await updateLead(result);
     } catch (dbErr: unknown) {
-      console.error(`FATAL: Could not persist AI insights for lead ${leadId}. Payload:`, { aiInsights, processingStatus });
       throw dbErr; // Re-throw to be caught by globalErr and written to DB
     }
   } catch (globalErr: unknown) {
-    console.error('Error in background processing:', globalErr);
 
     if (options.skipUpdate) {
       throw globalErr;
@@ -219,13 +201,7 @@ export async function processLeadBackground(
 
     // Fatal error update
     try {
-      const errorMessage = globalErr instanceof Error ? globalErr.message : String(globalErr);
-      await pool.query(
-         `UPDATE leads SET processing_status = $1 WHERE id = $2`,
-         [`error: ${errorMessage}`, leadId]
-      );
     } catch (e: unknown) {
-      console.error('Failed to write fatal error to DB', e);
     }
   }
 }
