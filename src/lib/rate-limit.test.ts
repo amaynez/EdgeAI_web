@@ -34,6 +34,11 @@ describe('rate-limit', () => {
       headers: { 'x-forwarded-for': ' ,  ' }
     });
     assert.strictEqual(getClientIp(req6), 'unknown');
+
+    const req7 = new Request('http://localhost', {
+      headers: { 'x-forwarded-for': '1.2.3.4,  ' }
+    });
+    assert.strictEqual(getClientIp(req7), '1.2.3.4', 'Should return the first IP if the last is empty but others exist');
   });
 
   test('isRateLimited allows up to 10 requests', () => {
@@ -42,6 +47,34 @@ describe('rate-limit', () => {
       assert.strictEqual(isRateLimited(ip), false);
     }
     assert.strictEqual(isRateLimited(ip), true);
+  });
+
+  test('isRateLimited handles out-of-order expired entries', () => {
+    const ip = 'test-ip-out-of-order';
+    let now = 1000;
+    const originalDateNow = Date.now;
+    Date.now = () => now;
+
+    try {
+      // Insert first IP at t=1000
+      isRateLimited(ip);
+
+      // Insert second IP at t=0 (time went backwards)
+      now = 0;
+      isRateLimited('other-ip');
+
+      // Now move time to where the second IP is expired (0 + 15min + 1)
+      // but the first IP is NOT expired (1000 + 15min + 1 is still > now)
+      now = 15 * 60 * 1000 + 1;
+
+      // When we query 'other-ip', the pruning loop stops at 'test-ip-out-of-order'
+      // because it is not expired.
+      // So 'other-ip' bypasses the pruning loop.
+      // The direct lookup for 'other-ip' then finds it expired and hits the delete branch.
+      assert.strictEqual(isRateLimited('other-ip'), false);
+    } finally {
+      Date.now = originalDateNow;
+    }
   });
 
   test('isRateLimited resets after window expires', () => {
