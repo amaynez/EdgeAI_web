@@ -15,16 +15,6 @@ export function getClientIp(request: Request): string {
   const realIp = request.headers.get('x-real-ip');
   if (realIp?.trim()) return realIp.trim();
 
-  const forwarded = request.headers.get('x-forwarded-for');
-  if (forwarded?.trim()) {
-    // When behind a single trusted proxy like Vercel, the last IP in the chain
-    // is the one that connected to the proxy. We take the last one to avoid
-    // trusting spoofed IPs prepended by the client.
-    const ips = forwarded.split(',');
-    const lastIp = ips[ips.length - 1].trim();
-    if (lastIp) return lastIp;
-  }
-
   return 'unknown';
 }
 
