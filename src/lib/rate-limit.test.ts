@@ -7,7 +7,7 @@ describe('rate-limit', () => {
     const req1 = new Request('http://localhost', {
       headers: { 'x-forwarded-for': '1.2.3.4, 5.6.7.8' }
     });
-    assert.strictEqual(getClientIp(req1), '5.6.7.8', 'Should take the last IP from x-forwarded-for');
+    assert.strictEqual(getClientIp(req1), 'unknown', 'Should ignore x-forwarded-for due to spoofing risks');
 
     const req2 = new Request('http://localhost', {
       headers: { 'x-real-ip': '2.3.4.5' }
@@ -29,11 +29,6 @@ describe('rate-limit', () => {
       headers: { 'x-real-ip': '   ' }
     });
     assert.strictEqual(getClientIp(req5), 'unknown');
-
-    const req6 = new Request('http://localhost', {
-      headers: { 'x-forwarded-for': ' ,  ' }
-    });
-    assert.strictEqual(getClientIp(req6), 'unknown');
   });
 
   test('isRateLimited allows up to 10 requests', () => {
