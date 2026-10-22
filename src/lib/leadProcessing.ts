@@ -3,7 +3,7 @@ import { LeadData, AIInsights, ApolloData, Persona, PersonaConfig } from './type
 import { fetchApolloEnrichment } from './apollo/client';
 import { generateAIInsights } from './ai/gemini';
 import { sendLeadEmail } from './email/sender';
-import { fetchLeadById, updateLead, LeadUpdateResult, PartialLeadRow } from './db/queries';
+import { fetchLeadById, LeadUpdateResult, PartialLeadRow } from './db/queries';
 
 export { type LeadData, type AIInsights, type ApolloData, type Persona, type PersonaConfig };
 
@@ -107,7 +107,14 @@ export async function processLeadBackground(
     let emailAlreadySent = false;
 
     if (options.existingData) {
+      const context = extractExistingLeadContext(options.existingData);
+      existingApolloDataStr = context.existingApolloDataStr;
+      emailAlreadySent = context.emailAlreadySent;
     } else {
+      const dbData = await fetchLeadById(leadId);
+      const context = extractExistingLeadContext(dbData || undefined);
+      existingApolloDataStr = context.existingApolloDataStr;
+      emailAlreadySent = context.emailAlreadySent;
     }
 
     // --- 1. Apollo.io Enrichment ---
@@ -117,6 +124,7 @@ export async function processLeadBackground(
 
     if (!existingApolloDataStr) {
       const apolloRes = await fetchApolloEnrichment(email, linkedin);
+
       if (apolloRes.ok) {
         apolloDataStr = apolloRes.apolloDataStr;
         apolloDataToSave = apolloRes.value;
@@ -132,7 +140,7 @@ export async function processLeadBackground(
 
     // --- 2. AI Qualification using Gemini ---
     let geminiFailed = false;
-    let geminiError = '';
+    const geminiError = '';
 
     let aiInsights: AIInsights = {
       urgencyScore: 0,
@@ -142,6 +150,7 @@ export async function processLeadBackground(
     };
 
     const geminiRes = await generateAIInsights(config.systemInstruction, config.prompt({ ...leadData, apolloDataStr }));
+    const promptStr = config.prompt({ ...leadData, apolloDataStr });
 
     if (geminiRes.ok) {
       aiInsights = geminiRes.value;
@@ -170,6 +179,7 @@ export async function processLeadBackground(
 
     if (!geminiFailed && !emailAlreadySent) {
       const emailRes = await sendLeadEmail(leadData, aiInsights, config.emailContent(aiInsights, company));
+
       if (emailRes.ok) {
         emailSentSuccessfully = true;
       } else {
