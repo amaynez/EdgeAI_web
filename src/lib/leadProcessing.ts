@@ -3,7 +3,7 @@ import { LeadData, AIInsights, ApolloData, Persona, PersonaConfig } from './type
 import { fetchApolloEnrichment } from './apollo/client';
 import { generateAIInsights } from './ai/gemini';
 import { sendLeadEmail } from './email/sender';
-import { fetchLeadById, updateLead, LeadUpdateResult, PartialLeadRow } from './db/queries';
+import { fetchLeadById, LeadUpdateResult, PartialLeadRow } from './db/queries';
 
 export { type LeadData, type AIInsights, type ApolloData, type Persona, type PersonaConfig };
 
@@ -74,6 +74,7 @@ function extractExistingLeadContext(data: PartialLeadRow | undefined): { existin
   if (!data) return { existingApolloDataStr: null, emailAlreadySent: false };
 
   let existingApolloDataStr = null;
+  const emailAlreadySent = !!data.email_sent_at;
 
   if (data.apollo_data && data.apollo_data.raw_data) {
     const compressed = data.apollo_data.compressed_data;
@@ -106,7 +107,14 @@ export async function processLeadBackground(
     let emailAlreadySent = false;
 
     if (options.existingData) {
+      const context = extractExistingLeadContext(options.existingData);
+      existingApolloDataStr = context.existingApolloDataStr;
+      emailAlreadySent = context.emailAlreadySent;
     } else {
+      const dbData = await fetchLeadById(leadId);
+      const context = extractExistingLeadContext(dbData || undefined);
+      existingApolloDataStr = context.existingApolloDataStr;
+      emailAlreadySent = context.emailAlreadySent;
     }
 
     // --- 1. Apollo.io Enrichment ---
@@ -115,6 +123,7 @@ export async function processLeadBackground(
     let apolloFailed = false;
 
     if (!existingApolloDataStr) {
+      const apolloRes = await fetchApolloEnrichment(email, linkedin);
 
       if (apolloRes.ok) {
         apolloDataStr = apolloRes.apolloDataStr;
@@ -131,7 +140,7 @@ export async function processLeadBackground(
 
     // --- 2. AI Qualification using Gemini ---
     let geminiFailed = false;
-    let geminiError = '';
+    const geminiError = '';
 
     let aiInsights: AIInsights = {
       urgencyScore: 0,
@@ -140,6 +149,8 @@ export async function processLeadBackground(
       draftEmail: 'Failed to generate draft email.',
     };
 
+    const promptStr = config.prompt({ ...leadData, apolloDataStr });
+    const geminiRes = await generateAIInsights(config.systemInstruction, promptStr);
 
     if (geminiRes.ok) {
       aiInsights = geminiRes.value;
@@ -166,6 +177,7 @@ export async function processLeadBackground(
     let emailSentSuccessfully = false;
 
     if (!geminiFailed && !emailAlreadySent) {
+      const emailRes = await sendLeadEmail(leadData, aiInsights, config.emailContent(aiInsights, company));
 
       if (emailRes.ok) {
         emailSentSuccessfully = true;
