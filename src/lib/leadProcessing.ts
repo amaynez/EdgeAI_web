@@ -74,6 +74,7 @@ function extractExistingLeadContext(data: PartialLeadRow | undefined): { existin
   if (!data) return { existingApolloDataStr: null, emailAlreadySent: false };
 
   let existingApolloDataStr = null;
+  const emailAlreadySent = !!data.email_sent_at || !!data.contacted;
 
   if (data.apollo_data && data.apollo_data.raw_data) {
     const compressed = data.apollo_data.compressed_data;
@@ -115,7 +116,7 @@ export async function processLeadBackground(
     let apolloFailed = false;
 
     if (!existingApolloDataStr) {
-
+      const apolloRes = await fetchApolloEnrichment(email, linkedin);
       if (apolloRes.ok) {
         apolloDataStr = apolloRes.apolloDataStr;
         apolloDataToSave = apolloRes.value;
@@ -140,11 +141,13 @@ export async function processLeadBackground(
       draftEmail: 'Failed to generate draft email.',
     };
 
+    const geminiRes = await generateAIInsights(config.systemInstruction, config.prompt({ ...leadData, apolloDataStr }));
 
     if (geminiRes.ok) {
       aiInsights = geminiRes.value;
     } else {
       geminiFailed = true;
+      geminiError = String(geminiRes.reason);
       if (!geminiRes.isMissingKey) {
       } else {
       }
@@ -166,7 +169,7 @@ export async function processLeadBackground(
     let emailSentSuccessfully = false;
 
     if (!geminiFailed && !emailAlreadySent) {
-
+      const emailRes = await sendLeadEmail(leadData, aiInsights, config.emailContent(aiInsights, company));
       if (emailRes.ok) {
         emailSentSuccessfully = true;
       } else {
