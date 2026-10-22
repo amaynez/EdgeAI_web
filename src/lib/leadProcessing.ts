@@ -3,7 +3,7 @@ import { LeadData, AIInsights, ApolloData, Persona, PersonaConfig } from './type
 import { fetchApolloEnrichment } from './apollo/client';
 import { generateAIInsights } from './ai/gemini';
 import { sendLeadEmail } from './email/sender';
-import { fetchLeadById, LeadUpdateResult, PartialLeadRow } from './db/queries';
+import { fetchLeadById, updateLead, LeadUpdateResult, PartialLeadRow } from './db/queries';
 
 export { type LeadData, type AIInsights, type ApolloData, type Persona, type PersonaConfig };
 
@@ -74,7 +74,7 @@ function extractExistingLeadContext(data: PartialLeadRow | undefined): { existin
   if (!data) return { existingApolloDataStr: null, emailAlreadySent: false };
 
   let existingApolloDataStr = null;
-  const emailAlreadySent = !!data.email_sent_at;
+  const emailAlreadySent = !!data.email_sent_at || !!data.contacted;
 
   if (data.apollo_data && data.apollo_data.raw_data) {
     const compressed = data.apollo_data.compressed_data;
@@ -107,14 +107,10 @@ export async function processLeadBackground(
     let emailAlreadySent = false;
 
     if (options.existingData) {
-      const context = extractExistingLeadContext(options.existingData);
-      existingApolloDataStr = context.existingApolloDataStr;
-      emailAlreadySent = context.emailAlreadySent;
+      const extracted = extractExistingLeadContext(options.existingData);
+      existingApolloDataStr = extracted.existingApolloDataStr;
+      emailAlreadySent = extracted.emailAlreadySent;
     } else {
-      const dbData = await fetchLeadById(leadId);
-      const context = extractExistingLeadContext(dbData || undefined);
-      existingApolloDataStr = context.existingApolloDataStr;
-      emailAlreadySent = context.emailAlreadySent;
     }
 
     // --- 1. Apollo.io Enrichment ---
@@ -124,7 +120,6 @@ export async function processLeadBackground(
 
     if (!existingApolloDataStr) {
       const apolloRes = await fetchApolloEnrichment(email, linkedin);
-
       if (apolloRes.ok) {
         apolloDataStr = apolloRes.apolloDataStr;
         apolloDataToSave = apolloRes.value;
@@ -140,7 +135,7 @@ export async function processLeadBackground(
 
     // --- 2. AI Qualification using Gemini ---
     let geminiFailed = false;
-    const geminiError = '';
+    let geminiError = '';
 
     let aiInsights: AIInsights = {
       urgencyScore: 0,
@@ -149,13 +144,13 @@ export async function processLeadBackground(
       draftEmail: 'Failed to generate draft email.',
     };
 
-    const promptStr = config.prompt({ ...leadData, apolloDataStr });
-    const geminiRes = await generateAIInsights(config.systemInstruction, promptStr);
+    const geminiRes = await generateAIInsights(config.systemInstruction, config.prompt({ ...leadData, apolloDataStr }));
 
     if (geminiRes.ok) {
       aiInsights = geminiRes.value;
     } else {
       geminiFailed = true;
+      geminiError = String(geminiRes.reason);
       if (!geminiRes.isMissingKey) {
       } else {
       }
@@ -178,7 +173,6 @@ export async function processLeadBackground(
 
     if (!geminiFailed && !emailAlreadySent) {
       const emailRes = await sendLeadEmail(leadData, aiInsights, config.emailContent(aiInsights, company));
-
       if (emailRes.ok) {
         emailSentSuccessfully = true;
       } else {
