@@ -20,9 +20,10 @@ export function getClientIp(request: Request): string {
     // When behind a single trusted proxy like Vercel, the last IP in the chain
     // is the one that connected to the proxy. We take the last one to avoid
     // trusting spoofed IPs prepended by the client.
-    const ips = forwarded.split(',');
-    const lastIp = ips[ips.length - 1].trim();
-    if (lastIp) return lastIp;
+    const ips = forwarded.split(',').map(ip => ip.trim()).filter(Boolean);
+    if (ips.length > 0) {
+      return ips[ips.length - 1];
+    }
   }
 
   return 'unknown';

@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { pool } from '@/lib/db';
 import { processLeadBackground } from '@/lib/leadProcessing';
-import { updateLead } from '@/lib/db/queries';
+import { updateLead, bulkUpdateLeads, bulkRecordErrors, LeadUpdateResult } from '@/lib/db/queries';
 
 export const dynamic = 'force-dynamic';
 
@@ -83,35 +83,59 @@ export async function GET(request: Request) {
       }
     };
 
-    // Update the processed leads concurrently
-    await Promise.all(results.map(async (settledResult, i) => {
+    const successfulUpdates: LeadUpdateResult[] = [];
+    const errorUpdates: { leadId: string; errorMsg: string }[] = [];
+
+    // Separate results into successes and errors
+    results.forEach((settledResult, i) => {
       const leadId = rows[i].id;
 
       if (settledResult.status === 'fulfilled') {
         const res = settledResult.value;
         if (res) {
+          successfulUpdates.push(res);
+        } else {
+          errorUpdates.push({ leadId, errorMsg: 'error: processing returned no result' });
+        }
+      } else {
+        const reason = settledResult.reason;
+        const msg = (reason instanceof Error ? reason.message : reason?.message) || 'Unknown error';
+        console.error(`Processing failed for lead ${leadId}:`, reason);
+        errorUpdates.push({ leadId, errorMsg: `error: ${msg}` });
+      }
+    });
+
+    // Execute bulk updates with fallback
+    if (successfulUpdates.length > 0) {
+      try {
+        await bulkUpdateLeads(successfulUpdates);
+      } catch (bulkErr) {
+        console.error('Bulk update failed, falling back to individual updates:', bulkErr);
+        await Promise.all(successfulUpdates.map(async (res) => {
           try {
             await updateLead(res);
           } catch (err: unknown) {
             const msg = err instanceof Error ? err.message : 'Unknown error';
-            console.error(`Failed to update lead ${leadId}:`, err);
-            await recordError(leadId, `error: update failed (${msg})`);
+            console.error(`Failed to update lead ${res.leadId}:`, err);
+            await recordError(res.leadId, `error: update failed (${msg})`);
           }
-        } else {
-          // If fulfilled but no result returned, mark as error to prevent 'pending' leak
-          await recordError(leadId, 'error: processing returned no result');
-        }
-      } else {
-        // Handle failure: Update lead status to error
-        const reason = settledResult.reason;
-        const msg = (reason instanceof Error ? reason.message : reason?.message) || 'Unknown error';
-        console.error(`Processing failed for lead ${leadId}:`, reason);
-        await recordError(leadId, `error: ${msg}`);
+        }));
       }
-    }));
+    }
+
+    if (errorUpdates.length > 0) {
+      try {
+        await bulkRecordErrors(errorUpdates);
+      } catch (bulkErr) {
+        console.error('Bulk record errors failed, falling back to individual updates:', bulkErr);
+        await Promise.all(errorUpdates.map(async (err) => {
+          await recordError(err.leadId, err.errorMsg);
+        }));
+      }
+    }
 
     return NextResponse.json({ success: true, processed: rows.length });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Cron process-leads error:', error);
     return NextResponse.json({ error: 'Failed to process leads via cron' }, { status: 500 });
   }

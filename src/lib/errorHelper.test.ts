@@ -14,6 +14,12 @@ describe('getErrorMessage', () => {
     assert.strictEqual(result, 'Fallback message');
   });
 
+  it('returns the fallback message when err is a plain object', () => {
+    const err = { message: 'Plain object error message' };
+    const result = getErrorMessage(err, 'Fallback message');
+    assert.strictEqual(result, 'Fallback message');
+  });
+
   it('returns the fallback message when err is null', () => {
     const result = getErrorMessage(null, 'Fallback message');
     assert.strictEqual(result, 'Fallback message');
@@ -21,12 +27,6 @@ describe('getErrorMessage', () => {
 
   it('returns the fallback message when err is undefined', () => {
     const result = getErrorMessage(undefined, 'Fallback message');
-    assert.strictEqual(result, 'Fallback message');
-  });
-
-  it('returns the fallback message when err is a plain object with a message property', () => {
-    const err = { message: 'Plain object error message' };
-    const result = getErrorMessage(err, 'Fallback message');
     assert.strictEqual(result, 'Fallback message');
   });
 
