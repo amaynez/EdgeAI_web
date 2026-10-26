@@ -4,23 +4,53 @@ import React, { useState, useEffect, useRef } from 'react';
 import { toggleContacted, fetchLeads } from './actions';
 import { sanitizeHtml } from '@/lib/sanitize';
 
+// ⚡ Bolt Optimization: Isolated the timer logic to its own component.
+// Previously, `now` lived at the top level of LeadsTable, causing the entire table
+// (with all leads, Apollo data, and rich HTML) to re-render every 60 seconds.
+// By isolating this state, only this small span re-renders.
+const UrgencyTimer = ({ timestamp }: { timestamp: string | number | Date }) => {
+  const [now, setNow] = useState<number | null>(null);
+
+  useEffect(() => {
+    // Avoid synchronous state updates in effect
+    const id = setTimeout(() => {
+        setNow(Date.now());
+        const interval = setInterval(() => {
+            setNow(Date.now());
+        }, 60000);
+        return () => clearInterval(interval);
+    }, 0);
+
+    return () => clearTimeout(id);
+  }, []);
+
+  if (now === null) return null; // Avoid impure rendering on server
+
+  const captureTime = new Date(timestamp).getTime();
+  const hoursElapsed = (now - captureTime) / (1000 * 60 * 60);
+  const isOverdue = hoursElapsed >= 24;
+  const hoursOnly = Math.floor(hoursElapsed);
+  const minutesOnly = Math.floor((hoursElapsed - hoursOnly) * 60);
+
+  return (
+    <span className={`urgency-timer ${isOverdue ? 'timer-bad' : 'timer-good'}`}>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" width="14" height="14">
+        <circle cx="12" cy="12" r="10"></circle>
+        <polyline points="12 6 12 12 16 14"></polyline>
+      </svg>
+      Waiting: {hoursOnly}h {minutesOnly}m
+    </span>
+  );
+};
+
 export default function LeadsTable({ initialLeads }: { initialLeads: any[] }) {
   const [leads, setLeads] = useState(initialLeads);
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [expandedLeads, setExpandedLeads] = useState<Set<string>>(new Set());
-  const [now, setNow] = useState(Date.now());
   const [showUncontactedOnly, setShowUncontactedOnly] = useState(true);
   // Track in-flight toggle calls to prevent concurrent updates for the same lead.
   const pendingToggles = useRef<Set<string>>(new Set());
   const isPolling = useRef(false);
-
-  useEffect(() => {
-    // Ticking timer: update "now" every minute
-    const interval = setInterval(() => {
-      setNow(Date.now());
-    }, 60000); // Only need minute-level precision
-    return () => clearInterval(interval);
-  }, []);
 
   useEffect(() => {
     // Poll for updates if any lead is 'pending'
@@ -175,23 +205,7 @@ export default function LeadsTable({ initialLeads }: { initialLeads: any[] }) {
                 </span>
                 
                 {!isContacted && lead.timestamp && (
-                  (() => {
-                    const captureTime = new Date(lead.timestamp).getTime();
-                    const hoursElapsed = (now - captureTime) / (1000 * 60 * 60);
-                    const isOverdue = hoursElapsed >= 24;
-                    const hoursOnly = Math.floor(hoursElapsed);
-                    const minutesOnly = Math.floor((hoursElapsed - hoursOnly) * 60);
-                    
-                    return (
-                      <span className={`urgency-timer ${isOverdue ? 'timer-bad' : 'timer-good'}`}>
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" width="14" height="14">
-                          <circle cx="12" cy="12" r="10"></circle>
-                          <polyline points="12 6 12 12 16 14"></polyline>
-                        </svg>
-                        Waiting: {hoursOnly}h {minutesOnly}m
-                      </span>
-                    );
-                  })()
+                  <UrgencyTimer timestamp={lead.timestamp} />
                 )}
               </div>
               
