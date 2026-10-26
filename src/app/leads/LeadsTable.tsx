@@ -64,15 +64,18 @@ export default function LeadsTable({ initialLeads }: { initialLeads: any[] }) {
   }, [leads]);
 
   const handleCopy = async (id: string, draftEmailHTML: string) => {
+    // Sanitize the HTML before extracting text or placing it on the clipboard
+    const sanitizedHTML = sanitizeHtml(draftEmailHTML || "");
+
+    // Use DOMParser to safely extract text content without executing scripts
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(
+      sanitizedHTML.replace(/<br\s*\/?>/gi, '\n').replace(/<\/p>|<\/div>/gi, '\n\n'),
+      "text/html"
+    );
+    const plainText = (doc.body.textContent || "").trim();
+
     try {
-      // Sanitize the HTML before extracting text or placing it on the clipboard
-      const sanitizedHTML = sanitizeHtml(draftEmailHTML || "");
-
-      // Use DOMParser to safely extract text content without executing scripts
-      const parser = new DOMParser();
-      const doc = parser.parseFromString(sanitizedHTML, "text/html");
-      const plainText = doc.body.textContent || "";
-
       // Copying as HTML allows pasting with bold/styles preserved in Gmail
       await navigator.clipboard.write([
         new ClipboardItem({
@@ -86,9 +89,7 @@ export default function LeadsTable({ initialLeads }: { initialLeads: any[] }) {
       console.error('Failed to copy. Trying fallback to plain text...', err);
       // Fallback for browsers that don't support ClipboardItem (like some versions of Firefox)
       try {
-        const plainTextDiv = document.createElement("div");
-        plainTextDiv.innerHTML = draftEmailHTML;
-        await navigator.clipboard.writeText(plainTextDiv.innerText);
+        await navigator.clipboard.writeText(plainText);
         setCopiedId(id);
         setTimeout(() => setCopiedId(null), 2500);
       } catch (fallbackErr) {
