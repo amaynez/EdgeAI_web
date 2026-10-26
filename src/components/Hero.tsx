@@ -38,7 +38,7 @@ export default function Hero({ dictionary }: { dictionary: any }) {
             height={270}
             className="hero-card-img"
             style={{ display: 'block' }}
-            priority={true}
+            preload={true}
           />
           <div className="hero-card-stats">
             <div>

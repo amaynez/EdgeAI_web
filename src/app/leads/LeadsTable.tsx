@@ -13,15 +13,18 @@ const UrgencyTimer = ({ timestamp }: { timestamp: string | number | Date }) => {
 
   useEffect(() => {
     // Avoid synchronous state updates in effect
+    let interval: NodeJS.Timeout | null = null;
     const id = setTimeout(() => {
         setNow(Date.now());
-        const interval = setInterval(() => {
+        interval = setInterval(() => {
             setNow(Date.now());
         }, 60000);
-        return () => clearInterval(interval);
     }, 0);
 
-    return () => clearTimeout(id);
+    return () => {
+        clearTimeout(id);
+        if (interval) clearInterval(interval);
+    };
   }, []);
 
   if (now === null) return null; // Avoid impure rendering on server
