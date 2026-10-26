@@ -82,7 +82,7 @@ export default function AuditLeadForm({ formCopy, onClose, onSuccess, onError }:
   return (
     <div className="audit-modal-overlay">
       <div className="audit-modal-content">
-        <button className="audit-modal-close" onClick={onClose}>&times;</button>
+        <button type="button" className="audit-modal-close" onClick={onClose} aria-label={dict.close}><span aria-hidden="true">&times;</span></button>
         <div className="audit-header">
           <h2 className="audit-title">{step === 3 ? dict.fallbackTitle : dict.title}</h2>
           {step !== 3 && <span className="audit-step-indicator">{step === 1 ? dict.step1 : dict.step2}</span>}
