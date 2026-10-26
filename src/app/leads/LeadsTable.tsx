@@ -4,21 +4,39 @@ import React, { useState, useEffect, useRef } from 'react';
 import { toggleContacted, fetchLeads } from './actions';
 import { sanitizeHtml } from '@/lib/sanitize';
 
+const UrgencyTimer = ({ timestamp, now }: { timestamp: string | number | Date; now: number }) => {
+  const captureTime = new Date(timestamp).getTime();
+  const hoursElapsed = Math.max(0, (now - captureTime) / (1000 * 60 * 60));
+  const isOverdue = hoursElapsed >= 24;
+  const hoursOnly = Math.floor(hoursElapsed);
+  const minutesOnly = Math.floor((hoursElapsed - hoursOnly) * 60);
+
+  return (
+    <span className={`urgency-timer ${isOverdue ? 'timer-bad' : 'timer-good'}`} suppressHydrationWarning>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" width="14" height="14">
+        <circle cx="12" cy="12" r="10"></circle>
+        <polyline points="12 6 12 12 16 14"></polyline>
+      </svg>
+      Waiting: {hoursOnly}h {minutesOnly}m
+    </span>
+  );
+};
+
 export default function LeadsTable({ initialLeads }: { initialLeads: any[] }) {
   const [leads, setLeads] = useState(initialLeads);
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [expandedLeads, setExpandedLeads] = useState<Set<string>>(new Set());
-  const [now, setNow] = useState(Date.now());
+  const [now, setNow] = useState(Date.now);
   const [showUncontactedOnly, setShowUncontactedOnly] = useState(true);
   // Track in-flight toggle calls to prevent concurrent updates for the same lead.
   const pendingToggles = useRef<Set<string>>(new Set());
   const isPolling = useRef(false);
 
   useEffect(() => {
-    // Ticking timer: update "now" every minute
+    // Update elapsed time once a minute across all lead cards
     const interval = setInterval(() => {
       setNow(Date.now());
-    }, 60000); // Only need minute-level precision
+    }, 60000);
     return () => clearInterval(interval);
   }, []);
 
@@ -175,23 +193,7 @@ export default function LeadsTable({ initialLeads }: { initialLeads: any[] }) {
                 </span>
                 
                 {!isContacted && lead.timestamp && (
-                  (() => {
-                    const captureTime = new Date(lead.timestamp).getTime();
-                    const hoursElapsed = (now - captureTime) / (1000 * 60 * 60);
-                    const isOverdue = hoursElapsed >= 24;
-                    const hoursOnly = Math.floor(hoursElapsed);
-                    const minutesOnly = Math.floor((hoursElapsed - hoursOnly) * 60);
-                    
-                    return (
-                      <span className={`urgency-timer ${isOverdue ? 'timer-bad' : 'timer-good'}`}>
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" width="14" height="14">
-                          <circle cx="12" cy="12" r="10"></circle>
-                          <polyline points="12 6 12 12 16 14"></polyline>
-                        </svg>
-                        Waiting: {hoursOnly}h {minutesOnly}m
-                      </span>
-                    );
-                  })()
+                  <UrgencyTimer timestamp={lead.timestamp} now={now} />
                 )}
               </div>
               
