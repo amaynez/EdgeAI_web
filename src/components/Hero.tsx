@@ -22,7 +22,7 @@ export default function Hero({ dictionary }: { dictionary: any }) {
               onClick={() => setFormOpen(true)}
             >
               {h.ctaPrimary}
-              <span>→</span>
+              <span aria-hidden="true">→</span>
             </button>
             <button className="btn-secondary" onClick={() => document.getElementById('proof')?.scrollIntoView({ behavior: 'smooth' })}>{h.ctaSecondary}</button>
           </div>

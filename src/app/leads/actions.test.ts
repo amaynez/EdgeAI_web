@@ -1,15 +1,26 @@
-import { describe, test, mock, afterEach } from 'node:test';
+import { describe, test, mock, afterEach, before } from 'node:test';
 import assert from 'node:assert/strict';
 import { fetchLeads, toggleContacted } from './actions';
 import { pool } from '@/lib/db';
+import { ADMIN_EMAIL } from '@/lib/config';
 
 describe('Leads Actions', () => {
+  let nextAuth: any;
+
+  before(async () => {
+    nextAuth = await import('next-auth/next');
+  });
+
   afterEach(() => {
     mock.restoreAll();
   });
 
   describe('fetchLeads', () => {
     test('successfully fetches leads', async () => {
+      mock.method(nextAuth, 'getServerSession', async () => ({
+        user: { email: ADMIN_EMAIL }
+      }));
+
       const mockRows = [{ id: '1', name: 'Lead 1' }];
       mock.method(pool, 'query', async (queryStr: string) => {
         if (queryStr.includes('CREATE TABLE') || queryStr.includes('ALTER TABLE')) {
@@ -29,6 +40,10 @@ describe('Leads Actions', () => {
     });
 
     test('returns empty leads array when no leads exist', async () => {
+      mock.method(nextAuth, 'getServerSession', async () => ({
+        user: { email: ADMIN_EMAIL }
+      }));
+
       mock.method(pool, 'query', async (queryStr: string) => {
         if (queryStr.includes('CREATE TABLE') || queryStr.includes('ALTER TABLE')) {
           return { rowCount: 0 };
@@ -41,6 +56,10 @@ describe('Leads Actions', () => {
     });
 
     test('returns error when database query fails', async () => {
+      mock.method(nextAuth, 'getServerSession', async () => ({
+        user: { email: ADMIN_EMAIL }
+      }));
+
       const consoleErrorMock = mock.method(console, 'error', () => {});
 
       mock.method(pool, 'query', async (queryStr: string) => {
@@ -54,10 +73,30 @@ describe('Leads Actions', () => {
       assert.deepEqual(result, { success: false, error: 'Failed to fetch leads' });
       assert.strictEqual(consoleErrorMock.mock.callCount(), 1);
     });
+
+    test('returns unauthorized when session is missing', async () => {
+      mock.method(nextAuth, 'getServerSession', async () => null);
+
+      const result = await fetchLeads();
+      assert.deepEqual(result, { success: false, error: 'Unauthorized' });
+    });
+
+    test('returns unauthorized when user email does not match ADMIN_EMAIL', async () => {
+      mock.method(nextAuth, 'getServerSession', async () => ({
+        user: { email: 'not_admin@example.com' }
+      }));
+
+      const result = await fetchLeads();
+      assert.deepEqual(result, { success: false, error: 'Unauthorized' });
+    });
   });
 
   describe('toggleContacted', () => {
     test('successfully updates contacted status', async () => {
+      mock.method(nextAuth, 'getServerSession', async () => ({
+        user: { email: ADMIN_EMAIL }
+      }));
+
       const queryMock = mock.method(pool, 'query', async (queryStr: string) => {
         if (queryStr.includes('CREATE TABLE') || queryStr.includes('ALTER TABLE')) {
           return { rowCount: 0 };
@@ -77,6 +116,10 @@ describe('Leads Actions', () => {
     });
 
     test('returns error when lead is not found (rowCount is 0)', async () => {
+      mock.method(nextAuth, 'getServerSession', async () => ({
+        user: { email: ADMIN_EMAIL }
+      }));
+
       const queryMock = mock.method(pool, 'query', async (queryStr: string) => {
         if (queryStr.includes('CREATE TABLE') || queryStr.includes('ALTER TABLE')) {
           return { rowCount: 0 };
@@ -97,6 +140,10 @@ describe('Leads Actions', () => {
 
 
     test('returns error when database query fails', async () => {
+      mock.method(nextAuth, 'getServerSession', async () => ({
+        user: { email: ADMIN_EMAIL }
+      }));
+
       const consoleErrorMock = mock.method(console, 'error', () => {});
 
       mock.method(pool, 'query', async (queryStr: string) => {
@@ -109,6 +156,22 @@ describe('Leads Actions', () => {
       const result = await toggleContacted('123', true);
       assert.deepEqual(result, { success: false, error: 'Internal Server Error' });
       assert.strictEqual(consoleErrorMock.mock.callCount(), 1);
+    });
+
+    test('returns unauthorized when session is missing', async () => {
+      mock.method(nextAuth, 'getServerSession', async () => null);
+
+      const result = await toggleContacted('123', true);
+      assert.deepEqual(result, { success: false, error: 'Unauthorized' });
+    });
+
+    test('returns unauthorized when user email does not match ADMIN_EMAIL', async () => {
+      mock.method(nextAuth, 'getServerSession', async () => ({
+        user: { email: 'not_admin@example.com' }
+      }));
+
+      const result = await toggleContacted('123', true);
+      assert.deepEqual(result, { success: false, error: 'Unauthorized' });
     });
   });
 });

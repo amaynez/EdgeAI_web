@@ -39,7 +39,7 @@ export default function CtaPanel({ cta, formCopy, locale }: { cta: any; formCopy
                   onClick={() => setOpen(true)}
                 >
                   {c.ctaPrimary}
-                  <span className="btn-arrow">→</span>
+                  <span className="btn-arrow" aria-hidden="true">→</span>
                 </button>
                 {successMessage && (
                   <p className="cta-message cta-success" aria-live="polite" aria-atomic="true" role="status">{successMessage}</p>

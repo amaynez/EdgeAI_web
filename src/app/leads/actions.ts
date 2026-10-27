@@ -1,8 +1,24 @@
 "use server";
 
 import { pool, ensureLeadsTable } from '@/lib/db';
+import { getServerSession } from "next-auth/next";
+import { authOptions } from "@/lib/auth";
+import { ADMIN_EMAIL } from "@/lib/config";
+
+async function checkAuth() {
+  const session = await getServerSession(authOptions);
+  if (!session || session.user?.email !== ADMIN_EMAIL) {
+    return false;
+  }
+  return true;
+}
 
 export async function fetchLeads() {
+  const isAuthorized = await checkAuth();
+  if (!isAuthorized) {
+    return { success: false, error: 'Unauthorized' };
+  }
+
   try {
     await ensureLeadsTable();
     const { rows } = await pool.query(
@@ -17,6 +33,11 @@ export async function fetchLeads() {
 }
 
 export async function toggleContacted(leadId: string, contacted: boolean) {
+  const isAuthorized = await checkAuth();
+  if (!isAuthorized) {
+    return { success: false, error: 'Unauthorized' };
+  }
+
   try {
     await ensureLeadsTable();
     const result = await pool.query(
