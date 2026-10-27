@@ -41,7 +41,7 @@ export default function IACeroFuga({ dictionary }: { dictionary: any }) {
             <ul className="solution-features">
               {features.map((f, i) => (
                 <li className="solution-feature" key={i}>
-                  <span className="solution-feature-check">✓</span>
+                  <span className="solution-feature-check" aria-hidden="true">✓</span>
                   <div>
                     <p className="solution-feature-title">{f.title}</p>
                     <p className="solution-feature-body">{f.body}</p>
