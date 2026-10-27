@@ -88,7 +88,7 @@ export default function AuditLeadForm({ formCopy, onClose, onSuccess, onError }:
           {step !== 3 && <span className="audit-step-indicator">{step === 1 ? dict.step1 : dict.step2}</span>}
         </div>
 
-        {error && <div className="audit-error">{error}</div>}
+        {error && <div className="audit-error" role="alert" aria-live="assertive">{error}</div>}
 
         <form onSubmit={handleSubmit} className="audit-form">
           {step === 1 && (

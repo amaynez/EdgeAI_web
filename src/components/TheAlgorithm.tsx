@@ -18,7 +18,7 @@ export default function TheAlgorithm({ dictionary }: { dictionary: any }) {
           {cards.map((card, i) => (
             <div className="stat-card" key={i}>
               <div>
-                <div className="stat-card-icon">{card.icon}</div>
+                <div className="stat-card-icon" aria-hidden="true">{card.icon}</div>
                 <h3 className="stat-card-title">{card.title}</h3>
                 <p className="stat-card-body">{card.body}</p>
               </div>
