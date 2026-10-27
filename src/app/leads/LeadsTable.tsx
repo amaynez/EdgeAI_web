@@ -4,7 +4,37 @@ import React, { useState, useEffect, useRef } from 'react';
 import { toggleContacted, fetchLeads } from './actions';
 import { sanitizeHtml } from '@/lib/sanitize';
 
-const UrgencyTimer = ({ timestamp, now }: { timestamp: string | number | Date; now: number }) => {
+// ⚡ Bolt Optimization:
+// We moved the `now` state and timer into the individual `UrgencyTimer` component.
+// Previously, this timer lived in the parent `LeadsTable`, causing a cascading re-render
+// of the *entire list* of leads every 60 seconds.
+// By isolating this state here, only the specific timers re-render, greatly improving performance for large lists.
+const UrgencyTimer = ({ timestamp }: { timestamp: string | number | Date }) => {
+  const [now, setNow] = useState<number | null>(null);
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setNow(Date.now());
+    const interval = setInterval(() => {
+      setNow(Date.now());
+    }, 60000);
+    return () => {
+      clearInterval(interval);
+    };
+  }, []);
+
+  if (now === null) {
+    return (
+      <span className="urgency-timer" suppressHydrationWarning>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" width="14" height="14">
+          <circle cx="12" cy="12" r="10"></circle>
+          <polyline points="12 6 12 12 16 14"></polyline>
+        </svg>
+        Waiting: --h --m
+      </span>
+    );
+  }
+
   const captureTime = new Date(timestamp).getTime();
   const hoursElapsed = Math.max(0, (now - captureTime) / (1000 * 60 * 60));
   const isOverdue = hoursElapsed >= 24;
@@ -26,19 +56,10 @@ export default function LeadsTable({ initialLeads }: { initialLeads: any[] }) {
   const [leads, setLeads] = useState(initialLeads);
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [expandedLeads, setExpandedLeads] = useState<Set<string>>(new Set());
-  const [now, setNow] = useState(Date.now);
   const [showUncontactedOnly, setShowUncontactedOnly] = useState(true);
   // Track in-flight toggle calls to prevent concurrent updates for the same lead.
   const pendingToggles = useRef<Set<string>>(new Set());
   const isPolling = useRef(false);
-
-  useEffect(() => {
-    // Update elapsed time once a minute across all lead cards
-    const interval = setInterval(() => {
-      setNow(Date.now());
-    }, 60000);
-    return () => clearInterval(interval);
-  }, []);
 
   useEffect(() => {
     // Poll for updates if any lead is 'pending'
@@ -194,7 +215,7 @@ export default function LeadsTable({ initialLeads }: { initialLeads: any[] }) {
                 </span>
                 
                 {!isContacted && lead.timestamp && (
-                  <UrgencyTimer timestamp={lead.timestamp} now={now} />
+                  <UrgencyTimer timestamp={lead.timestamp} />
                 )}
               </div>
               
