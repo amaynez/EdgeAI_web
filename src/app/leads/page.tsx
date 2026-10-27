@@ -1,5 +1,5 @@
 import { getServerSession } from "next-auth/next";
-import { authOptions } from "../api/auth/[...nextauth]/route";
+import { authOptions } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { pool, ensureLeadsTable } from '@/lib/db';
 import { ADMIN_EMAIL } from '@/lib/config';
