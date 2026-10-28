@@ -1,0 +1,23 @@
+<<<<<<< SEARCH
+export default function LeadsTable({ initialLeads }: { initialLeads: any[] }) {
+=======
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export default function LeadsTable({ initialLeads }: { initialLeads: any[] }) {
+>>>>>>> REPLACE
+<<<<<<< SEARCH
+const CopyButton = ({ id, draftEmailHTML, disabled }: { id: string, draftEmailHTML?: string, disabled: boolean }) => {
+=======
+const CopyButton = ({ draftEmailHTML, disabled }: { draftEmailHTML?: string, disabled: boolean }) => {
+>>>>>>> REPLACE
+<<<<<<< SEARCH
+                <CopyButton
+                  id={lead.id}
+                  draftEmailHTML={lead.qualification?.draftEmail}
+                  disabled={lead.processing_status === 'pending' || !lead.qualification?.draftEmail}
+                />
+=======
+                <CopyButton
+                  draftEmailHTML={lead.qualification?.draftEmail}
+                  disabled={lead.processing_status === 'pending' || !lead.qualification?.draftEmail}
+                />
+>>>>>>> REPLACE
