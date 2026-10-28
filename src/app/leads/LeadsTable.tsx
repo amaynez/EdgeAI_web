@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { toggleContacted, fetchLeads } from './actions';
 import { sanitizeHtml } from '@/lib/sanitize';
 
@@ -52,9 +52,65 @@ const UrgencyTimer = ({ timestamp }: { timestamp: string | number | Date }) => {
   );
 };
 
+const CopyButton = ({ draftEmailHTML, disabled }: { draftEmailHTML?: string, disabled: boolean }) => {
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = async () => {
+    if (!draftEmailHTML) return;
+    const sanitizedHTML = sanitizeHtml(draftEmailHTML || "");
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(
+      sanitizedHTML.replace(/<br\s*\/?>/gi, '\n').replace(/<\/p>|<\/div>/gi, '\n\n'),
+      "text/html"
+    );
+    const plainText = (doc.body.textContent || "").trim();
+
+    try {
+      await navigator.clipboard.write([
+        new ClipboardItem({
+          "text/html": new Blob([sanitizedHTML], { type: "text/html" }),
+          "text/plain": new Blob([plainText], { type: "text/plain" }),
+        })
+      ]);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2500);
+    } catch (err) {
+      console.error('Failed to copy. Trying fallback to plain text...', err);
+      try {
+        await navigator.clipboard.writeText(plainText);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2500);
+      } catch (fallbackErr) {
+        console.error('Fallback copy failed:', fallbackErr);
+      }
+    }
+  };
+
+  return (
+    <button
+      className={`copy-btn ${copied ? 'copied' : ''}`}
+      onClick={handleCopy}
+      disabled={disabled}
+      style={{ opacity: disabled ? 0.5 : 1 }}
+    >
+      {copied ? (
+        <>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+          Copied for Gmail!
+        </>
+      ) : (
+        <>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+          Copy as Rich Text
+        </>
+      )}
+    </button>
+  );
+};
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export default function LeadsTable({ initialLeads }: { initialLeads: any[] }) {
   const [leads, setLeads] = useState(initialLeads);
-  const [copiedId, setCopiedId] = useState<string | null>(null);
   const [expandedLeads, setExpandedLeads] = useState<Set<string>>(new Set());
   const [showUncontactedOnly, setShowUncontactedOnly] = useState(true);
   // Track in-flight toggle calls to prevent concurrent updates for the same lead.
@@ -72,7 +128,11 @@ export default function LeadsTable({ initialLeads }: { initialLeads: any[] }) {
       try {
         const result = await fetchLeads();
         if (result.success && result.leads) {
-          setLeads(result.leads);
+          // Prevent unnecessary re-renders if the fetched leads are identical to current leads
+          // The JSON.stringify check is fast enough for the typical number of leads
+          if (JSON.stringify(result.leads) !== JSON.stringify(leads)) {
+            setLeads(result.leads);
+          }
         }
       } catch (err) {
         console.error('Failed to poll leads:', err);
@@ -83,41 +143,6 @@ export default function LeadsTable({ initialLeads }: { initialLeads: any[] }) {
 
     return () => clearInterval(pollInterval);
   }, [leads]);
-
-  const handleCopy = async (id: string, draftEmailHTML: string) => {
-    // Sanitize the HTML before extracting text or placing it on the clipboard
-    const sanitizedHTML = sanitizeHtml(draftEmailHTML || "");
-
-    // Use DOMParser to safely extract text content without executing scripts
-    const parser = new DOMParser();
-    const doc = parser.parseFromString(
-      sanitizedHTML.replace(/<br\s*\/?>/gi, '\n').replace(/<\/p>|<\/div>/gi, '\n\n'),
-      "text/html"
-    );
-    const plainText = (doc.body.textContent || "").trim();
-
-    try {
-      // Copying as HTML allows pasting with bold/styles preserved in Gmail
-      await navigator.clipboard.write([
-        new ClipboardItem({
-          "text/html": new Blob([sanitizedHTML], { type: "text/html" }),
-          "text/plain": new Blob([plainText], { type: "text/plain" }),
-        })
-      ]);
-      setCopiedId(id);
-      setTimeout(() => setCopiedId(null), 2500);
-    } catch (err) {
-      console.error('Failed to copy. Trying fallback to plain text...', err);
-      // Fallback for browsers that don't support ClipboardItem (like some versions of Firefox)
-      try {
-        await navigator.clipboard.writeText(plainText);
-        setCopiedId(id);
-        setTimeout(() => setCopiedId(null), 2500);
-      } catch (fallbackErr) {
-        console.error('Fallback copy failed:', fallbackErr);
-      }
-    }
-  };
 
   const toggleApolloData = (id: string) => {
     setExpandedLeads(prev => {
@@ -155,9 +180,9 @@ export default function LeadsTable({ initialLeads }: { initialLeads: any[] }) {
     }
   };
 
-  const filteredLeads = showUncontactedOnly
-    ? leads.filter(l => !l.contacted)
-    : leads;
+  const filteredLeads = useMemo(() => {
+    return showUncontactedOnly ? leads.filter(l => !l.contacted) : leads;
+  }, [leads, showUncontactedOnly]);
 
   if (leads.length === 0) {
     return <div style={{ textAlign: 'center', padding: '4rem', color: 'var(--text-secondary)' }}>No leads found yet.</div>;
@@ -262,24 +287,10 @@ export default function LeadsTable({ initialLeads }: { initialLeads: any[] }) {
                   {isContacted ? "Contacted" : "Mark Contacted"}
                 </label>
 
-                <button 
-                  className={`copy-btn ${copiedId === lead.id ? 'copied' : ''}`} 
-                  onClick={() => handleCopy(lead.id, lead.qualification?.draftEmail)}
+                <CopyButton
+                  draftEmailHTML={lead.qualification?.draftEmail}
                   disabled={lead.processing_status === 'pending' || !lead.qualification?.draftEmail}
-                  style={{ opacity: (lead.processing_status === 'pending' || !lead.qualification?.draftEmail) ? 0.5 : 1 }}
-                >
-                  {copiedId === lead.id ? (
-                    <>
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                      Copied for Gmail!
-                    </>
-                  ) : (
-                    <>
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
-                      Copy as Rich Text
-                    </>
-                  )}
-                </button>
+                />
               </div>
               <div className="email-content">
                 {lead.processing_status === 'pending' ? (

@@ -1,1 +1,5 @@
 ## 2026-10-27 - Prevent Cascading Re-renders in Long Lists\n**Learning:** When using React intervals in a parent component (like LeadsTable) to update timestamps, it causes the entire list of elements to re-render. Since we don't have virtualization, this represents a significant O(n) performance hit every minute.\n**Action:** Push high-frequency updating state (like elapsed time) down into individual child components (UrgencyTimer) to isolate re-renders strictly to the nodes that actually change.
+
+## 2026-10-27 - Prevent Cascading Re-renders in Large Lists
+**Learning:** Transient UI state like `copiedId` (tracking which button was clicked) when stored in a parent component managing a large list forces the entire list and all its children to re-render. Similarly, unconditionally updating state from polling (even if data hasn't changed) causes massive unnecessary background re-rendering.
+**Action:** Extract granular UI states into dedicated child components (e.g., `CopyButton`) to isolate re-renders. Always use equality checks (`JSON.stringify` or deep equals) before updating list state from polling or subscriptions.
