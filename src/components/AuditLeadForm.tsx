@@ -94,20 +94,20 @@ export default function AuditLeadForm({ formCopy, onClose, onSuccess, onError }:
           {step === 1 && (
             <div className="audit-step">
               <div className="audit-field">
-                <label htmlFor="name">{dict.name}</label>
-                <input id="name" type="text" name="name" value={formData.name} onChange={handleInputChange} className="audit-input" />
+                <label htmlFor="name">{dict.name}<span className="cta-error" aria-hidden="true"> *</span></label>
+                <input id="name" type="text" name="name" value={formData.name} onChange={handleInputChange} className="audit-input" required />
               </div>
               <div className="audit-field">
-                <label htmlFor="email">{dict.email}</label>
-                <input id="email" type="email" name="email" value={formData.email} onChange={handleInputChange} className="audit-input" />
+                <label htmlFor="email">{dict.email}<span className="cta-error" aria-hidden="true"> *</span></label>
+                <input id="email" type="email" name="email" value={formData.email} onChange={handleInputChange} className="audit-input" required />
               </div>
               <div className="audit-field">
-                <label htmlFor="company">{dict.company}</label>
-                <input id="company" type="text" name="company" value={formData.company} onChange={handleInputChange} className="audit-input" />
+                <label htmlFor="company">{dict.company}<span className="cta-error" aria-hidden="true"> *</span></label>
+                <input id="company" type="text" name="company" value={formData.company} onChange={handleInputChange} className="audit-input" required />
               </div>
               <div className="audit-field">
-                <label htmlFor="role">{dict.role}</label>
-                <input id="role" type="text" name="role" value={formData.role} onChange={handleInputChange} className="audit-input" />
+                <label htmlFor="role">{dict.role}<span className="cta-error" aria-hidden="true"> *</span></label>
+                <input id="role" type="text" name="role" value={formData.role} onChange={handleInputChange} className="audit-input" required />
               </div>
               <button type="button" onClick={handleNext} className="btn-primary audit-button">
                 {dict.next}
