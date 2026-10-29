@@ -15,6 +15,7 @@ describe('POST /api/lead/retry', () => {
     const req = new Request('http://localhost/api/lead/retry', {
       method: 'POST',
       body: JSON.stringify({}),
+      headers: { 'x-forwarded-for': '127.0.0.1' },
     });
 
     // Act
@@ -31,6 +32,7 @@ describe('POST /api/lead/retry', () => {
     const req = new Request('http://localhost/api/lead/retry', {
       method: 'POST',
       body: JSON.stringify({ leadId: '' }),
+      headers: { 'x-forwarded-for': '127.0.0.2' },
     });
 
     // Act
@@ -47,6 +49,7 @@ describe('POST /api/lead/retry', () => {
     const req = new Request('http://localhost/api/lead/retry', {
       method: 'POST',
       body: JSON.stringify({ leadId: null }),
+      headers: { 'x-forwarded-for': '127.0.0.3' },
     });
 
     // Act
@@ -63,6 +66,7 @@ describe('POST /api/lead/retry', () => {
     const req = new Request('http://localhost/api/lead/retry', {
       method: 'POST',
       body: JSON.stringify({ leadId: 12345 }),
+      headers: { 'x-forwarded-for': '127.0.0.4' },
     });
 
     // Act
@@ -79,6 +83,7 @@ describe('POST /api/lead/retry', () => {
     const req = new Request('http://localhost/api/lead/retry', {
       method: 'POST',
       body: JSON.stringify({ leadId: true }),
+      headers: { 'x-forwarded-for': '127.0.0.5' },
     });
 
     // Act
@@ -95,6 +100,7 @@ describe('POST /api/lead/retry', () => {
     const req = new Request('http://localhost/api/lead/retry', {
       method: 'POST',
       body: JSON.stringify({ leadId: [] }),
+      headers: { 'x-forwarded-for': '127.0.0.6' },
     });
 
     // Act
@@ -111,6 +117,7 @@ describe('POST /api/lead/retry', () => {
     const req = new Request('http://localhost/api/lead/retry', {
       method: 'POST',
       body: JSON.stringify({ leadId: {} }),
+      headers: { 'x-forwarded-for': '127.0.0.7' },
     });
 
     // Act
@@ -127,6 +134,7 @@ describe('POST /api/lead/retry', () => {
     const req = new Request('http://localhost/api/lead/retry', {
       method: 'POST',
       body: JSON.stringify({ leadId: '   ' }),
+      headers: { 'x-forwarded-for': '127.0.0.8' },
     });
 
     // Act
@@ -143,6 +151,7 @@ describe('POST /api/lead/retry', () => {
     const req = new Request('http://localhost/api/lead/retry', {
       method: 'POST',
       body: JSON.stringify({ leadId: 'missing-id' }),
+      headers: { 'x-forwarded-for': '127.0.0.9' },
     });
 
     mock.method(pool, 'query', async () => {
@@ -163,6 +172,7 @@ describe('POST /api/lead/retry', () => {
     const req = new Request('http://localhost/api/lead/retry', {
       method: 'POST',
       body: JSON.stringify({ leadId: 'existing-id' }),
+      headers: { 'x-forwarded-for': '127.0.0.10' },
     });
 
     let queryCallCount = 0;
@@ -191,6 +201,7 @@ describe('POST /api/lead/retry', () => {
     const req = new Request('http://localhost/api/lead/retry', {
       method: 'POST',
       body: JSON.stringify({ leadId: 'valid-id' }),
+      headers: { 'x-forwarded-for': '127.0.0.11' },
     });
 
     let queryCallCount = 0;
@@ -224,6 +235,7 @@ describe('POST /api/lead/retry', () => {
     const req = new Request('http://localhost/api/lead/retry', {
       method: 'POST',
       body: JSON.stringify({ leadId: 'valid-id' }),
+      headers: { 'x-forwarded-for': '127.0.0.12' },
     });
 
     const consoleErrorMock = mock.method(console, 'error', () => {});
@@ -246,6 +258,7 @@ describe('POST /api/lead/retry', () => {
     const req = new Request('http://localhost/api/lead/retry', {
       method: 'POST',
       body: 'invalid-json',
+      headers: { 'x-forwarded-for': '127.0.0.13' },
     });
 
     // Act
@@ -262,6 +275,7 @@ describe('POST /api/lead/retry', () => {
     const req = new Request('http://localhost/api/lead/retry', {
       method: 'POST',
       body: JSON.stringify(null),
+      headers: { 'x-forwarded-for': '127.0.0.14' },
     });
 
     // Act
@@ -278,6 +292,7 @@ describe('POST /api/lead/retry', () => {
     const req = new Request('http://localhost/api/lead/retry', {
       method: 'POST',
       body: JSON.stringify([]),
+      headers: { 'x-forwarded-for': '127.0.0.15' },
     });
 
     // Act
@@ -294,6 +309,7 @@ describe('POST /api/lead/retry', () => {
     const req = new Request('http://localhost/api/lead/retry', {
       method: 'POST',
       body: JSON.stringify("string-body"),
+      headers: { 'x-forwarded-for': '127.0.0.16' },
     });
 
     // Act
@@ -303,5 +319,36 @@ describe('POST /api/lead/retry', () => {
     // Assert
     assert.strictEqual(res.status, 400);
     assert.deepEqual(data, { error: 'Invalid request body' });
+  });
+  test('blocks the 11th request from the same IP with 429', async () => {
+    const ip = '127.0.0.17';
+    const createRequest = () => new Request('http://localhost/api/lead/retry', {
+      method: 'POST',
+      body: JSON.stringify({ leadId: 'valid-id' }),
+      headers: { 'x-forwarded-for': ip },
+    });
+
+    let queryCallCount = 0;
+    mock.method(pool, 'query', async () => {
+      queryCallCount++;
+      if (queryCallCount % 2 === 1) {
+        return { rows: [{ id: 'valid-id', name: 'Test Lead', email: 'test@example.com' }] };
+      }
+      return { rowCount: 1 };
+    });
+
+    mock.method(globalThis, 'fetch', async () => {
+      return new Response(JSON.stringify({}), { status: 200 });
+    });
+
+    for (let i = 0; i < 10; i++) {
+      const res = await POST(createRequest());
+      assert.strictEqual(res.status, 200, `Request ${i + 1} should be 200`);
+    }
+
+    const res11 = await POST(createRequest());
+    assert.strictEqual(res11.status, 429, '11th request should be 429 Rate Limited');
+    const data = await res11.json();
+    assert.deepEqual(data, { error: 'Too many requests. Please try again later.' });
   });
 });
