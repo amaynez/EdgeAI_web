@@ -52,6 +52,74 @@ const UrgencyTimer = ({ timestamp }: { timestamp: string | number | Date }) => {
   );
 };
 
+// ⚡ Bolt Optimization:
+// Extracted Apollo enrichment data into an isolated `ApolloDataViewer` component.
+// Previously, the `isExpanded` state was tracked in the parent `LeadsTable`, causing
+// an O(N) re-render of the entire list whenever a single row was toggled.
+// Localizing this state eliminates list-wide re-renders, significantly improving
+// interaction performance on large lists.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const ApolloDataViewer = ({ leadId, apolloData }: { leadId: string, apolloData: any }) => {
+  const [isExpanded, setIsExpanded] = useState(false);
+
+  if (!apolloData) return null;
+
+  return (
+    <div className="apollo-data-container">
+      <button
+        className="apollo-toggle-btn"
+        onClick={() => setIsExpanded(prev => !prev)}
+        aria-expanded={isExpanded}
+        aria-controls={`apollo-data-section-${leadId}`}
+      >
+        {isExpanded ? (
+          <><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="18 15 12 9 6 15"></polyline></svg> Hide Enrichment Data</>
+        ) : (
+          <><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg> View Enrichment Data (Apollo.io)</>
+        )}
+      </button>
+
+      {isExpanded && (
+        <div className="apollo-data-section" id={`apollo-data-section-${leadId}`}>
+          <div className="apollo-grid">
+            <div className="apollo-field">
+              <span className="apollo-label">Title:</span>
+              <span className="apollo-value">{apolloData.title || 'N/A'}</span>
+            </div>
+            <div className="apollo-field">
+              <span className="apollo-label">Seniority:</span>
+              <span className="apollo-value apollo-badge seniority-badge">{apolloData.seniority || 'N/A'}</span>
+            </div>
+            <div className="apollo-field">
+              <span className="apollo-label">Phone:</span>
+              <span className="apollo-value">{apolloData.primary_phone || 'N/A'}</span>
+            </div>
+            <div className="apollo-field">
+              <span className="apollo-label">Employees:</span>
+              <span className="apollo-value apollo-badge size-badge">{apolloData.estimated_num_employees || 'N/A'}</span>
+            </div>
+            <div className="apollo-field">
+              <span className="apollo-label">Industry:</span>
+              <span className="apollo-value apollo-badge industry-badge">{apolloData.industry || 'N/A'}</span>
+            </div>
+          </div>
+
+          {apolloData.technology_names && apolloData.technology_names.length > 0 && (
+            <div className="apollo-tech-stack">
+              <span className="apollo-label">Tech Stack:</span>
+              <div className="tech-badges">
+                {apolloData.technology_names.map((tech: string, idx: number) => (
+                  <span key={idx} className="apollo-badge tech-badge">{tech}</span>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+};
+
 const CopyButton = ({ draftEmailHTML, disabled }: { draftEmailHTML?: string, disabled: boolean }) => {
   const [copied, setCopied] = useState(false);
 
@@ -111,7 +179,6 @@ const CopyButton = ({ draftEmailHTML, disabled }: { draftEmailHTML?: string, dis
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export default function LeadsTable({ initialLeads }: { initialLeads: any[] }) {
   const [leads, setLeads] = useState(initialLeads);
-  const [expandedLeads, setExpandedLeads] = useState<Set<string>>(new Set());
   const [showUncontactedOnly, setShowUncontactedOnly] = useState(true);
   // Track in-flight toggle calls to prevent concurrent updates for the same lead.
   const pendingToggles = useRef<Set<string>>(new Set());
@@ -143,15 +210,6 @@ export default function LeadsTable({ initialLeads }: { initialLeads: any[] }) {
 
     return () => clearInterval(pollInterval);
   }, [leads]);
-
-  const toggleApolloData = (id: string) => {
-    setExpandedLeads(prev => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
-  };
 
   const handleToggleContacted = async (id: string, currentState: boolean) => {
     // Prevent concurrent in-flight calls for the same lead.
@@ -215,7 +273,6 @@ export default function LeadsTable({ initialLeads }: { initialLeads: any[] }) {
         const isContacted = !!lead.contacted;
         
         const hasApolloData = !!lead.apollo_data?.compressed_data;
-        const isExpanded = expandedLeads.has(lead.id);
         const apolloData = lead.apollo_data?.compressed_data;
 
         return (
@@ -305,58 +362,7 @@ export default function LeadsTable({ initialLeads }: { initialLeads: any[] }) {
               </div>
             </div>
             {hasApolloData && (
-              <div className="apollo-data-container">
-                <button
-                  className="apollo-toggle-btn"
-                  onClick={() => toggleApolloData(lead.id)}
-                  aria-expanded={isExpanded}
-                  aria-controls={`apollo-data-section-${lead.id}`}
-                >
-                  {isExpanded ? (
-                    <><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="18 15 12 9 6 15"></polyline></svg> Hide Enrichment Data</>
-                  ) : (
-                    <><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg> View Enrichment Data (Apollo.io)</>
-                  )}
-                </button>
-
-                {isExpanded && apolloData && (
-                  <div className="apollo-data-section" id={`apollo-data-section-${lead.id}`}>
-                    <div className="apollo-grid">
-                      <div className="apollo-field">
-                        <span className="apollo-label">Title:</span>
-                        <span className="apollo-value">{apolloData.title || 'N/A'}</span>
-                      </div>
-                      <div className="apollo-field">
-                        <span className="apollo-label">Seniority:</span>
-                        <span className="apollo-value apollo-badge seniority-badge">{apolloData.seniority || 'N/A'}</span>
-                      </div>
-                      <div className="apollo-field">
-                        <span className="apollo-label">Phone:</span>
-                        <span className="apollo-value">{apolloData.primary_phone || 'N/A'}</span>
-                      </div>
-                      <div className="apollo-field">
-                        <span className="apollo-label">Employees:</span>
-                        <span className="apollo-value apollo-badge size-badge">{apolloData.estimated_num_employees || 'N/A'}</span>
-                      </div>
-                      <div className="apollo-field">
-                        <span className="apollo-label">Industry:</span>
-                        <span className="apollo-value apollo-badge industry-badge">{apolloData.industry || 'N/A'}</span>
-                      </div>
-                    </div>
-
-                    {apolloData.technology_names && apolloData.technology_names.length > 0 && (
-                      <div className="apollo-tech-stack">
-                        <span className="apollo-label">Tech Stack:</span>
-                        <div className="tech-badges">
-                          {apolloData.technology_names.map((tech: string, idx: number) => (
-                            <span key={idx} className="apollo-badge tech-badge">{tech}</span>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                )}
-              </div>
+              <ApolloDataViewer leadId={lead.id} apolloData={apolloData} />
             )}
           </div>
         );
