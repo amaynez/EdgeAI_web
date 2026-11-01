@@ -1,5 +1,5 @@
 'use client';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import type { Dictionary } from '@/i18n';
 import { getErrorMessage } from '@/lib/errorHelper';
 
@@ -43,6 +43,16 @@ export default function AuditLeadForm({ formCopy, onClose, onSuccess, onError }:
     return true;
   };
 
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && onClose) {
+        onClose();
+      }
+    };
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [onClose]);
+
   const handleNext = () => {
     if (validateStep1()) {
       const emailDomain = formData.email.split('@')[1]?.toLowerCase();
@@ -80,11 +90,11 @@ export default function AuditLeadForm({ formCopy, onClose, onSuccess, onError }:
   };
 
   return (
-    <div className="audit-modal-overlay">
+    <div className="audit-modal-overlay" role="dialog" aria-modal="true" aria-labelledby="audit-modal-title">
       <div className="audit-modal-content">
         <button type="button" className="audit-modal-close" onClick={onClose} aria-label={dict.close}><span aria-hidden="true">&times;</span></button>
         <div className="audit-header">
-          <h2 className="audit-title">{step === 3 ? dict.fallbackTitle : dict.title}</h2>
+          <h2 className="audit-title" id="audit-modal-title">{step === 3 ? dict.fallbackTitle : dict.title}</h2>
           {step !== 3 && <span className="audit-step-indicator">{step === 1 ? dict.step1 : dict.step2}</span>}
         </div>
 
