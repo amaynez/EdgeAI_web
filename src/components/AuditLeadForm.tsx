@@ -1,5 +1,5 @@
 'use client';
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import type { Dictionary } from '@/i18n';
 import { getErrorMessage } from '@/lib/errorHelper';
 
@@ -24,6 +24,24 @@ export default function AuditLeadForm({ formCopy, onClose, onSuccess, onError }:
   });
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const nameInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && onClose) {
+        onClose();
+      }
+    };
+    document.addEventListener('keydown', handleKeyDown);
+
+    // Focus the first input when the form mounts
+    if (step === 1 && nameInputRef.current) {
+      nameInputRef.current.focus();
+    }
+
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [onClose, step]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -81,10 +99,15 @@ export default function AuditLeadForm({ formCopy, onClose, onSuccess, onError }:
 
   return (
     <div className="audit-modal-overlay">
-      <div className="audit-modal-content">
+      <div
+        className="audit-modal-content"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="audit-modal-title"
+      >
         <button type="button" className="audit-modal-close" onClick={onClose} aria-label={dict.close}><span aria-hidden="true">&times;</span></button>
         <div className="audit-header">
-          <h2 className="audit-title">{step === 3 ? dict.fallbackTitle : dict.title}</h2>
+          <h2 id="audit-modal-title" className="audit-title">{step === 3 ? dict.fallbackTitle : dict.title}</h2>
           {step !== 3 && <span className="audit-step-indicator">{step === 1 ? dict.step1 : dict.step2}</span>}
         </div>
 
@@ -95,7 +118,7 @@ export default function AuditLeadForm({ formCopy, onClose, onSuccess, onError }:
             <div className="audit-step">
               <div className="audit-field">
                 <label htmlFor="name">{dict.name}<span className="cta-error" aria-hidden="true"> *</span></label>
-                <input id="name" type="text" name="name" value={formData.name} onChange={handleInputChange} className="audit-input" required />
+                <input ref={nameInputRef} id="name" type="text" name="name" value={formData.name} onChange={handleInputChange} className="audit-input" required />
               </div>
               <div className="audit-field">
                 <label htmlFor="email">{dict.email}<span className="cta-error" aria-hidden="true"> *</span></label>
