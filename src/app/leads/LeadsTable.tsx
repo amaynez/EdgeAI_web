@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useRef, useMemo, useCallback, memo } from 'react';
 import { toggleContacted, fetchLeads } from './actions';
 import { sanitizeHtml } from '@/lib/sanitize';
 
@@ -177,6 +177,107 @@ const CopyButton = ({ draftEmailHTML, disabled }: { draftEmailHTML?: string, dis
 };
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
+const LeadCard = memo(function LeadCard({ lead, onToggleContacted }: { lead: any, onToggleContacted: (id: string, currentState: boolean) => void }) {
+  const isHighUrgency = lead.qualification?.urgencyScore >= 8;
+  const isContacted = !!lead.contacted;
+
+  const hasApolloData = !!lead.apollo_data?.compressed_data;
+  const apolloData = lead.apollo_data?.compressed_data;
+
+  return (
+    <div className={`lead-card ${isHighUrgency ? 'lead-card-high-urgency' : ''}`} data-contacted={isContacted}>
+      <div className="lead-info-col">
+        <div className="lead-header">
+          <h2>{lead.name}</h2>
+          <div className="lead-meta">
+            <span className="meta-item">{lead.email}</span>
+            <span className="meta-dot">•</span>
+            <span className="meta-item">{lead.role} at {lead.company}</span>
+            <span className="meta-dot">•</span>
+            <span className="meta-item">Urgency: <strong>{lead.qualification?.urgencyScore}/10</strong></span>
+            <span className="meta-dot">•</span>
+            <span className="meta-item">Potential: <strong>{lead.qualification?.potentialScore}/10</strong></span>
+          </div>
+        </div>
+
+        <div className="timestamp-row">
+          <span className="timestamp-date">
+            Captured: <strong>{lead.timestamp ? new Date(lead.timestamp).toLocaleString() : 'Unknown'}</strong>
+          </span>
+
+          {!isContacted && lead.timestamp && (
+            <UrgencyTimer timestamp={lead.timestamp} />
+          )}
+        </div>
+
+        <div className="lead-analysis">
+          <strong>AI Analysis:</strong>
+          {lead.processing_status === 'pending' ? (
+            <span style={{ color: 'var(--text-muted)' }}>⏳ AI Processing in background...</span>
+          ) : lead.processing_status?.startsWith('error') ? (
+            <span style={{ color: '#dc2626' }}>❌ {lead.processing_status}</span>
+          ) : (
+            lead.qualification?.analysis || 'AI Analysis Failed or Unavailable.'
+          )}
+        </div>
+
+        <div className="lead-q-section">
+          <div>
+            <span className="lead-q">Q: Which retailers do you currently sell to?</span>
+            <span className="lead-a">{lead.q1}</span>
+          </div>
+          <div>
+            <span className="lead-q">Q: Approximately what % of your P&L do you attribute to trade spend and allowances?</span>
+            <span className="lead-a">{lead.q2}</span>
+          </div>
+          <div>
+            <span className="lead-q">Q: Have you experienced unexpected deductions or margin erosion from retailer chargebacks in the last 12 months?</span>
+            <span className="lead-a">{lead.q3}</span>
+          </div>
+        </div>
+      </div>
+
+      <div className="lead-email-col">
+        <div className="email-actions">
+          <label className="contacted-toggle" title="Mark this lead as contacted">
+            <input
+              type="checkbox"
+              checked={isContacted}
+              onChange={() => onToggleContacted(lead.id, isContacted)}
+            />
+            <div className="custom-checkbox">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="20 6 9 17 4 12"></polyline>
+              </svg>
+            </div>
+            {isContacted ? "Contacted" : "Mark Contacted"}
+          </label>
+
+          <CopyButton
+            draftEmailHTML={lead.qualification?.draftEmail}
+            disabled={lead.processing_status === 'pending' || !lead.qualification?.draftEmail}
+          />
+        </div>
+        <div className="email-content">
+          {lead.processing_status === 'pending' ? (
+            <>⏳ <em>Draft email is being generated...</em></>
+          ) : lead.processing_status?.startsWith('error') ? (
+            <span style={{ color: '#dc2626' }}>Error generating email: {lead.processing_status}</span>
+          ) : lead.qualification?.draftEmail ? (
+            <div dangerouslySetInnerHTML={{ __html: lead.qualification.draftEmail }} />
+          ) : (
+            'No draft generated.'
+          )}
+        </div>
+      </div>
+      {hasApolloData && (
+        <ApolloDataViewer leadId={lead.id} apolloData={apolloData} />
+      )}
+    </div>
+  );
+});
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export default function LeadsTable({ initialLeads }: { initialLeads: any[] }) {
   const [leads, setLeads] = useState(initialLeads);
   const [showUncontactedOnly, setShowUncontactedOnly] = useState(true);
@@ -211,7 +312,7 @@ export default function LeadsTable({ initialLeads }: { initialLeads: any[] }) {
     return () => clearInterval(pollInterval);
   }, [leads]);
 
-  const handleToggleContacted = async (id: string, currentState: boolean) => {
+  const handleToggleContacted = useCallback(async (id: string, currentState: boolean) => {
     // Prevent concurrent in-flight calls for the same lead.
     if (pendingToggles.current.has(id)) return;
     pendingToggles.current.add(id);
@@ -236,7 +337,7 @@ export default function LeadsTable({ initialLeads }: { initialLeads: any[] }) {
     } finally {
       pendingToggles.current.delete(id);
     }
-  };
+  }, []);
 
   const filteredLeads = useMemo(() => {
     return showUncontactedOnly ? leads.filter(l => !l.contacted) : leads;
@@ -268,105 +369,9 @@ export default function LeadsTable({ initialLeads }: { initialLeads: any[] }) {
         </div>
       ) : (
         <div className="leads-grid">
-          {filteredLeads.map((lead) => {
-        const isHighUrgency = lead.qualification?.urgencyScore >= 8;
-        const isContacted = !!lead.contacted;
-        
-        const hasApolloData = !!lead.apollo_data?.compressed_data;
-        const apolloData = lead.apollo_data?.compressed_data;
-
-        return (
-          <div key={lead.id} className={`lead-card ${isHighUrgency ? 'lead-card-high-urgency' : ''}`} data-contacted={isContacted}>
-            <div className="lead-info-col">
-              <div className="lead-header">
-                <h2>{lead.name}</h2>
-                <div className="lead-meta">
-                  <span className="meta-item">{lead.email}</span>
-                  <span className="meta-dot">•</span>
-                  <span className="meta-item">{lead.role} at {lead.company}</span>
-                  <span className="meta-dot">•</span>
-                  <span className="meta-item">Urgency: <strong>{lead.qualification?.urgencyScore}/10</strong></span>
-                  <span className="meta-dot">•</span>
-                  <span className="meta-item">Potential: <strong>{lead.qualification?.potentialScore}/10</strong></span>
-                </div>
-              </div>
-              
-              <div className="timestamp-row">
-                <span className="timestamp-date">
-                  Captured: <strong>{lead.timestamp ? new Date(lead.timestamp).toLocaleString() : 'Unknown'}</strong>
-                </span>
-                
-                {!isContacted && lead.timestamp && (
-                  <UrgencyTimer timestamp={lead.timestamp} />
-                )}
-              </div>
-              
-              <div className="lead-analysis">
-                <strong>AI Analysis:</strong>
-                {lead.processing_status === 'pending' ? (
-                  <span style={{ color: 'var(--text-muted)' }}>⏳ AI Processing in background...</span>
-                ) : lead.processing_status?.startsWith('error') ? (
-                  <span style={{ color: '#dc2626' }}>❌ {lead.processing_status}</span>
-                ) : (
-                  lead.qualification?.analysis || 'AI Analysis Failed or Unavailable.'
-                )}
-              </div>
-
-              <div className="lead-q-section">
-                <div>
-                  <span className="lead-q">Q: Which retailers do you currently sell to?</span> 
-                  <span className="lead-a">{lead.q1}</span>
-                </div>
-                <div>
-                  <span className="lead-q">Q: Approximately what % of your P&L do you attribute to trade spend and allowances?</span> 
-                  <span className="lead-a">{lead.q2}</span>
-                </div>
-                <div>
-                  <span className="lead-q">Q: Have you experienced unexpected deductions or margin erosion from retailer chargebacks in the last 12 months?</span> 
-                  <span className="lead-a">{lead.q3}</span>
-                </div>
-              </div>
-            </div>
-
-            <div className="lead-email-col">
-              <div className="email-actions">
-                <label className="contacted-toggle" title="Mark this lead as contacted">
-                  <input 
-                    type="checkbox" 
-                    checked={isContacted}
-                    onChange={() => handleToggleContacted(lead.id, isContacted)}
-                  />
-                  <div className="custom-checkbox">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-                      <polyline points="20 6 9 17 4 12"></polyline>
-                    </svg>
-                  </div>
-                  {isContacted ? "Contacted" : "Mark Contacted"}
-                </label>
-
-                <CopyButton
-                  draftEmailHTML={lead.qualification?.draftEmail}
-                  disabled={lead.processing_status === 'pending' || !lead.qualification?.draftEmail}
-                />
-              </div>
-              <div className="email-content">
-                {lead.processing_status === 'pending' ? (
-                  <>⏳ <em>Draft email is being generated...</em></>
-                ) : lead.processing_status?.startsWith('error') ? (
-                  <span style={{ color: '#dc2626' }}>Error generating email: {lead.processing_status}</span>
-                ) : lead.qualification?.draftEmail ? (
-                  <div dangerouslySetInnerHTML={{ __html: lead.qualification.draftEmail }} />
-                ) : (
-                  'No draft generated.'
-                )}
-              </div>
-            </div>
-            {hasApolloData && (
-              <ApolloDataViewer leadId={lead.id} apolloData={apolloData} />
-            )}
-          </div>
-        );
-      })}
+          {filteredLeads.map((lead) => (
+            <LeadCard key={lead.id} lead={lead} onToggleContacted={handleToggleContacted} />
+          ))}
         </div>
       )}
     </div>
