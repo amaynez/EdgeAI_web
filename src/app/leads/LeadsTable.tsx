@@ -26,7 +26,7 @@ const UrgencyTimer = ({ timestamp }: { timestamp: string | number | Date }) => {
   if (now === null) {
     return (
       <span className="urgency-timer" suppressHydrationWarning>
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" width="14" height="14">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" width="14" height="14" aria-hidden="true">
           <circle cx="12" cy="12" r="10"></circle>
           <polyline points="12 6 12 12 16 14"></polyline>
         </svg>
@@ -43,7 +43,7 @@ const UrgencyTimer = ({ timestamp }: { timestamp: string | number | Date }) => {
 
   return (
     <span className={`urgency-timer ${isOverdue ? 'timer-bad' : 'timer-good'}`} suppressHydrationWarning>
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" width="14" height="14">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" width="14" height="14" aria-hidden="true">
         <circle cx="12" cy="12" r="10"></circle>
         <polyline points="12 6 12 12 16 14"></polyline>
       </svg>
@@ -73,9 +73,9 @@ const ApolloDataViewer = ({ leadId, apolloData }: { leadId: string, apolloData: 
         aria-controls={`apollo-data-section-${leadId}`}
       >
         {isExpanded ? (
-          <><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="18 15 12 9 6 15"></polyline></svg> Hide Enrichment Data</>
+          <><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><polyline points="18 15 12 9 6 15"></polyline></svg> Hide Enrichment Data</>
         ) : (
-          <><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg> View Enrichment Data (Apollo.io)</>
+          <><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"></polyline></svg> View Enrichment Data (Apollo.io)</>
         )}
       </button>
 
@@ -154,21 +154,25 @@ const CopyButton = ({ draftEmailHTML, disabled }: { draftEmailHTML?: string, dis
     }
   };
 
+  const tooltipText = disabled ? "Draft email is not available yet" : "Copy rich text to clipboard";
+
   return (
     <button
       className={`copy-btn ${copied ? 'copied' : ''}`}
       onClick={handleCopy}
       disabled={disabled}
+      title={tooltipText}
       style={{ opacity: disabled ? 0.5 : 1 }}
+      aria-label={copied ? "Copied" : tooltipText}
     >
       {copied ? (
         <>
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"></polyline></svg>
           Copied for Gmail!
         </>
       ) : (
         <>
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
           Copy as Rich Text
         </>
       )}
