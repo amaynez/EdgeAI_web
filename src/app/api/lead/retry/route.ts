@@ -2,9 +2,19 @@ import { NextResponse } from 'next/server';
 import { pool } from '@/lib/db';
 import { processLeadBackground } from '@/lib/leadProcessing';
 import { waitUntil } from '@vercel/functions';
+import { getClientIp, isRateLimited } from '@/lib/rate-limit';
 
 export async function POST(request: Request) {
   try {
+    // --- Rate limiting ---
+    const clientIp = getClientIp(request);
+    if (isRateLimited(clientIp)) {
+      return NextResponse.json(
+        { error: 'Too many requests. Please try again later.' },
+        { status: 429 }
+      );
+    }
+
     let body;
     try {
       body = await request.json();

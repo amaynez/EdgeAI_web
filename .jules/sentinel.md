@@ -2,3 +2,8 @@
 **Vulnerability:** A DOM XSS vulnerability existed in `src/app/leads/LeadsTable.tsx` within a fallback function `handleCopy` because `draftEmailHTML` (which might contain maliciously crafted payloads) was directly assigned to an unattached `div`'s `innerHTML` (`plainTextDiv.innerHTML = draftEmailHTML;`).
 **Learning:** Even though `draftEmailHTML` might be sanitized server-side, it is still unsafe practice to use `innerHTML` anywhere on the frontend when handling potentially unsanitized properties, especially as `innerHTML` runs inline scripts or invokes remote resources. Use `DOMParser` instead and extract its `.body.textContent` if you strictly need text extraction without relying on `innerHTML`.
 **Prevention:** To safely extract plain text from untrusted HTML on the client-side, prefer using `new DOMParser().parseFromString(html, 'text/html').body.textContent` to prevent DOM XSS vulnerabilities associated with direct `innerHTML` assignment.
+
+## 2025-02-27 - [Missing Rate Limiting on API Endpoints]
+**Vulnerability:** The `/api/lead/retry` endpoint was missing rate limiting, making it vulnerable to abuse and resource exhaustion (DoS) through repeated requests.
+**Learning:** API routes built with Next.js App Router may lack default rate limiting. Endpoints that trigger database queries, external API calls, or background processing functions need explicit rate limiting to prevent abuse.
+**Prevention:** Always apply the shared `isRateLimited` and `getClientIp` utilities to sensitive or resource-intensive API routes, and include rate-limit tests in the corresponding route tests.
