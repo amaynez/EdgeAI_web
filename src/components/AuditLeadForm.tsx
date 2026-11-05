@@ -105,19 +105,19 @@ export default function AuditLeadForm({ formCopy, onClose, onSuccess, onError }:
             <div className="audit-step">
               <div className="audit-field">
                 <label htmlFor="name">{dict.name}<span className="cta-error" aria-hidden="true"> *</span></label>
-                <input id="name" type="text" name="name" value={formData.name} onChange={handleInputChange} className="audit-input" required aria-required="true" />
+                <input id="name" type="text" name="name" value={formData.name} onChange={handleInputChange} className="audit-input" required />
               </div>
               <div className="audit-field">
                 <label htmlFor="email">{dict.email}<span className="cta-error" aria-hidden="true"> *</span></label>
-                <input id="email" type="email" name="email" value={formData.email} onChange={handleInputChange} className="audit-input" required aria-required="true" />
+                <input id="email" type="email" name="email" value={formData.email} onChange={handleInputChange} className="audit-input" required />
               </div>
               <div className="audit-field">
                 <label htmlFor="company">{dict.company}<span className="cta-error" aria-hidden="true"> *</span></label>
-                <input id="company" type="text" name="company" value={formData.company} onChange={handleInputChange} className="audit-input" required aria-required="true" />
+                <input id="company" type="text" name="company" value={formData.company} onChange={handleInputChange} className="audit-input" required />
               </div>
               <div className="audit-field">
                 <label htmlFor="role">{dict.role}<span className="cta-error" aria-hidden="true"> *</span></label>
-                <input id="role" type="text" name="role" value={formData.role} onChange={handleInputChange} className="audit-input" required aria-required="true" />
+                <input id="role" type="text" name="role" value={formData.role} onChange={handleInputChange} className="audit-input" required />
               </div>
               <button type="button" onClick={handleNext} className="btn-primary audit-button">
                 {dict.next}
@@ -129,21 +129,21 @@ export default function AuditLeadForm({ formCopy, onClose, onSuccess, onError }:
             <div className="audit-step">
               <div className="audit-field">
                 <label htmlFor="q1" className="audit-question">{dict.q1}</label>
-                <select id="q1" name="q1" value={formData.q1} onChange={handleInputChange} className="audit-input" required aria-required="true">
+                <select id="q1" name="q1" value={formData.q1} onChange={handleInputChange} className="audit-input" required>
                   <option value="" disabled>—</option>
                   {dict.q1opts.map((opt: SelectOption) => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
                 </select>
               </div>
               <div className="audit-field">
                 <label htmlFor="q2" className="audit-question">{dict.q2}</label>
-                <select id="q2" name="q2" value={formData.q2} onChange={handleInputChange} className="audit-input" required aria-required="true">
+                <select id="q2" name="q2" value={formData.q2} onChange={handleInputChange} className="audit-input" required>
                   <option value="" disabled>—</option>
                   {dict.q2opts.map((opt: SelectOption) => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
                 </select>
               </div>
               <div className="audit-field">
                 <label htmlFor="q3" className="audit-question">{dict.q3}</label>
-                <select id="q3" name="q3" value={formData.q3} onChange={handleInputChange} className="audit-input" required aria-required="true">
+                <select id="q3" name="q3" value={formData.q3} onChange={handleInputChange} className="audit-input" required>
                   <option value="" disabled>—</option>
                   {dict.q3opts.map((opt: SelectOption) => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
                 </select>
@@ -161,7 +161,7 @@ export default function AuditLeadForm({ formCopy, onClose, onSuccess, onError }:
               </p>
               <div className="audit-field" style={{ textAlign: 'left', marginBottom: '1.5rem' }}>
                 <label htmlFor="linkedin">{dict.linkedin}</label>
-                <input id="linkedin" type="url" name="linkedin" placeholder={dict.linkedinPlaceholder} value={formData.linkedin} onChange={handleInputChange} className="audit-input" required aria-required="true" />
+                <input id="linkedin" type="url" name="linkedin" placeholder={dict.linkedinPlaceholder} value={formData.linkedin} onChange={handleInputChange} className="audit-input" required />
               </div>
               <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center' }}>
                 <button type="button" onClick={() => {
