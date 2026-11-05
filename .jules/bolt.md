@@ -7,3 +7,7 @@
 ## 2024-10-31 - [Extract Transient UI State from Lists]
 **Learning:** In large React list mappings (like `LeadsTable`), maintaining transient UI states (such as toggling an accordion or viewing extra data) in the parent component causes the entire list to re-render. This O(N) cost for an O(1) change can be a significant performance bottleneck.
 **Action:** Always extract complex transient UI state (e.g. `isExpanded`, timers, copy statuses) into isolated child components so that state updates restrict re-renders strictly to the component instance experiencing the interaction.
+
+## 2024-11-03 - [Prevent O(N) Re-renders via List Item Memoization]
+**Learning:** Rendering complex items directly inside a `.map` loop in a parent component that frequently updates its state (e.g., via polling or optimistic UI toggles) causes an O(N) re-render of the entire list. Even if granular UI states are extracted, the parent state update forces all un-memoized children to re-render.
+**Action:** Always extract list items into a `React.memo`-wrapped child component and ensure event handler props passed from the parent are stabilized using `useCallback`. This guarantees O(1) re-renders when only a single item changes or the parent receives unchanged polling data. Ensure the component passed to `memo` is a named function to avoid ESLint `react/display-name` errors.
