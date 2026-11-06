@@ -279,6 +279,26 @@ const LeadCard = memo(function LeadCard({ lead, onToggleContacted }: { lead: any
       )}
     </div>
   );
+}, (prevProps, nextProps) => {
+  // ⚡ Bolt Optimization: Deep equality check to prevent O(N) re-renders
+  // Polling fetchLeads() returns brand new object references for *every* lead.
+  // Standard React.memo (shallow compare) would re-render the entire list
+  // even if 99% of the leads hadn't actually changed their data.
+  // We compare the specific fields that matter instead of using the expensive JSON.stringify
+  // Ensure we compare all fields that could change and affect the UI
+  return prevProps.lead.id === nextProps.lead.id &&
+         prevProps.lead.processing_status === nextProps.lead.processing_status &&
+         prevProps.lead.contacted === nextProps.lead.contacted &&
+         prevProps.lead.name === nextProps.lead.name &&
+         prevProps.lead.email === nextProps.lead.email &&
+         prevProps.lead.company === nextProps.lead.company &&
+         prevProps.lead.role === nextProps.lead.role &&
+         prevProps.lead.q1 === nextProps.lead.q1 &&
+         prevProps.lead.q2 === nextProps.lead.q2 &&
+         prevProps.lead.q3 === nextProps.lead.q3 &&
+         JSON.stringify(prevProps.lead.qualification) === JSON.stringify(nextProps.lead.qualification) &&
+         JSON.stringify(prevProps.lead.apollo_data) === JSON.stringify(nextProps.lead.apollo_data) &&
+         prevProps.onToggleContacted === nextProps.onToggleContacted;
 });
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
