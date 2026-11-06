@@ -11,3 +11,7 @@
 ## 2024-11-03 - [Prevent O(N) Re-renders via List Item Memoization]
 **Learning:** Rendering complex items directly inside a `.map` loop in a parent component that frequently updates its state (e.g., via polling or optimistic UI toggles) causes an O(N) re-render of the entire list. Even if granular UI states are extracted, the parent state update forces all un-memoized children to re-render.
 **Action:** Always extract list items into a `React.memo`-wrapped child component and ensure event handler props passed from the parent are stabilized using `useCallback`. This guarantees O(1) re-renders when only a single item changes or the parent receives unchanged polling data. Ensure the component passed to `memo` is a named function to avoid ESLint `react/display-name` errors.
+
+## 2026-11-06 - [Prevent O(N) Re-renders in Lists Updated by API Polling]
+**Learning:** When a list is populated by API polling (like `fetchLeads()`), every poll returns new object references for *every* item in the list, even if the underlying data hasn't changed. Standard `React.memo` uses shallow equality, which fails when given new object references, causing an O(N) re-render of the entire list.
+**Action:** Always provide a custom equality comparison function to `React.memo` (e.g., using deep equality like `JSON.stringify(prevProps.item) === JSON.stringify(nextProps.item)`) when the list is driven by network requests or polling that mints new object references. This restores O(1) rendering performance.
