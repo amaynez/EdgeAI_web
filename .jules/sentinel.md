@@ -1,14 +1,4 @@
-## 2025-02-27 - [DOM XSS in clipboard fallback logic]
-**Vulnerability:** A DOM XSS vulnerability existed in `src/app/leads/LeadsTable.tsx` within a fallback function `handleCopy` because `draftEmailHTML` (which might contain maliciously crafted payloads) was directly assigned to an unattached `div`'s `innerHTML` (`plainTextDiv.innerHTML = draftEmailHTML;`).
-**Learning:** Even though `draftEmailHTML` might be sanitized server-side, it is still unsafe practice to use `innerHTML` anywhere on the frontend when handling potentially unsanitized properties, especially as `innerHTML` runs inline scripts or invokes remote resources. Use `DOMParser` instead and extract its `.body.textContent` if you strictly need text extraction without relying on `innerHTML`.
-**Prevention:** To safely extract plain text from untrusted HTML on the client-side, prefer using `new DOMParser().parseFromString(html, 'text/html').body.textContent` to prevent DOM XSS vulnerabilities associated with direct `innerHTML` assignment.
-
-## 2025-02-27 - [Missing Rate Limiting on API Endpoints]
-**Vulnerability:** The `/api/lead/retry` endpoint was missing rate limiting, making it vulnerable to abuse and resource exhaustion (DoS) through repeated requests.
-**Learning:** API routes built with Next.js App Router may lack default rate limiting. Endpoints that trigger database queries, external API calls, or background processing functions need explicit rate limiting to prevent abuse.
-**Prevention:** Always apply the shared `isRateLimited` and `getClientIp` utilities to sensitive or resource-intensive API routes, and include rate-limit tests in the corresponding route tests.
-
-## 2025-02-27 - [Fix timing attack vulnerability in cron authentication]
-**Vulnerability:** In `/api/cron/process-leads/route.ts`, the cron endpoint checked the authorization header against the secret using a standard string inequality operator (`!==`). This makes the endpoint susceptible to a timing attack where an attacker could repeatedly query the endpoint and use the microscopic response time differences to guess the secret byte-by-byte.
-**Learning:** Checking secure tokens or passwords with standard equality operations causes the check to fail fast (early exit) on the first non-matching character, thus leaking information about the matched length via timing variations.
-**Prevention:** Always use `crypto.timingSafeEqual` for cryptographic authentication token comparisons to ensure the comparison time is constant, regardless of match length. Ensure lengths are identical before calling to prevent throwing a `TypeError`.
+## 2024-05-30 - Fix HTML Sanitizer XSS Bypass via Obfuscated Entities
+**Vulnerability:** The custom HTML sanitizer's `canonicalizeHref` function failed to decode certain HTML5 named character references (e.g., `&colon;`, `&tab;`, `&newline;`, `&cr;`) before validating the URL scheme against unsafe protocols like `javascript:`. This allowed obfuscated XSS payloads (e.g., `<a href="javascript&colon;alert(1)">`) to bypass validation and execute in the browser.
+**Learning:** Custom HTML sanitization logic is extremely brittle. Relying on simple string replacement and regex for decoding HTML entities is prone to bypasses because the browser's HTML parser is far more forgiving and complex (e.g., decoding a vast array of named entities) than typical custom sanitizers.
+**Prevention:** Always use robust, established sanitization libraries (like DOMPurify) when possible. If a custom sanitizer is strictly required, ensure the entity decoding step explicitly handles all common obfuscation vectors (including named entities like `&colon;` and `&tab;`) prior to any regex-based scheme validation.
