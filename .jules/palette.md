@@ -7,3 +7,6 @@
 ## 2024-11-05 - Native HTML5 Tooltips on Disabled Elements
 **Learning:** Native `title` attributes (tooltips) do not function on `disabled` form elements in modern browsers (Chrome, Firefox, Safari) because disabled elements inherently suppress mouse events (like `mouseenter` or `mouseover`), which are required to trigger the tooltip display. Attempting to explain a disabled state purely through a native tooltip is ineffective.
 **Action:** Do not use `title` to explain why a button is disabled. Instead, if context is needed, either dynamically update the button's visible text (e.g., from 'Submit' to 'Sending...') or provide an adjacent, visually hidden or non-disabled element (like a small helper text) to convey the state change or reason for disablement.
+## $(date +%Y-%m-%d) - ARIA Label Syncing with Visual Text
+**Learning:** When dynamically updating the visual text of an element (like changing "Copy as Rich Text" to "Draft Unavailable" when a button is disabled), failing to update the `aria-label` creates a desync where screen readers announce outdated or confusing information compared to what sighted users see.
+**Action:** Always ensure that `aria-label` or `aria-labelledby` attributes are synchronized with conditional visual text changes so that all users receive the same contextual information.
