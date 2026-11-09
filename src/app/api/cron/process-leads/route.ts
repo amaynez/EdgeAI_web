@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { pool } from '@/lib/db';
 import { processLeadBackground } from '@/lib/leadProcessing';
 import { updateLead, bulkUpdateLeads, bulkRecordErrors, LeadUpdateResult } from '@/lib/db/queries';
+import * as crypto from 'crypto';
 
 export const dynamic = 'force-dynamic';
 
@@ -14,7 +15,19 @@ export async function GET(request: Request) {
       return new NextResponse('Server misconfiguration: CRON_SECRET not set', { status: 500 });
   }
 
-  if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+  let isAuthorized = false;
+  const expectedAuth = `Bearer ${process.env.CRON_SECRET}`;
+
+  if (authHeader) {
+      const authHeaderBuffer = Buffer.from(authHeader);
+      const expectedAuthBuffer = Buffer.from(expectedAuth);
+
+      if (authHeaderBuffer.length === expectedAuthBuffer.length) {
+          isAuthorized = crypto.timingSafeEqual(authHeaderBuffer, expectedAuthBuffer);
+      }
+  }
+
+  if (!isAuthorized) {
       return new NextResponse('Unauthorized', { status: 401 });
   }
 

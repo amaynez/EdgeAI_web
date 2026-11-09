@@ -7,3 +7,8 @@
 **Vulnerability:** The `/api/lead/retry` endpoint was missing rate limiting, making it vulnerable to abuse and resource exhaustion (DoS) through repeated requests.
 **Learning:** API routes built with Next.js App Router may lack default rate limiting. Endpoints that trigger database queries, external API calls, or background processing functions need explicit rate limiting to prevent abuse.
 **Prevention:** Always apply the shared `isRateLimited` and `getClientIp` utilities to sensitive or resource-intensive API routes, and include rate-limit tests in the corresponding route tests.
+
+## 2025-02-27 - [Fix timing attack vulnerability in cron authentication]
+**Vulnerability:** In `/api/cron/process-leads/route.ts`, the cron endpoint checked the authorization header against the secret using a standard string inequality operator (`!==`). This makes the endpoint susceptible to a timing attack where an attacker could repeatedly query the endpoint and use the microscopic response time differences to guess the secret byte-by-byte.
+**Learning:** Checking secure tokens or passwords with standard equality operations causes the check to fail fast (early exit) on the first non-matching character, thus leaking information about the matched length via timing variations.
+**Prevention:** Always use `crypto.timingSafeEqual` for cryptographic authentication token comparisons to ensure the comparison time is constant, regardless of match length. Ensure lengths are identical before calling to prevent throwing a `TypeError`.
