@@ -60,6 +60,13 @@ describe('sanitizeHtml', () => {
       { input: '<a href="  java\nscript:alert(\'xss\')">XSS</a>', expected: '<a>XSS</a>' },
       { input: '<a href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==">XSS</a>', expected: '<a>XSS</a>' },
       { input: '<a href="&amp;#x6A;&amp;#x61;&amp;#x76;&amp;#x61;&amp;#x73;&amp;#x63;&amp;#x72;&amp;#x69;&amp;#x70;&amp;#x74;&amp;#x3A;alert(1)">Obfuscated</a>', expected: '<a>Obfuscated</a>' },
+      { input: '<a href="javascript&colon;alert(1)">XSS</a>', expected: '<a>XSS</a>' },
+      { input: '<a href="java&Tab;script:alert(1)">XSS</a>', expected: '<a>XSS</a>' },
+      { input: '<a href="java&NewLine;script:alert(1)">XSS</a>', expected: '<a>XSS</a>' },
+      // browsers decode numeric entities even without the trailing semicolon
+      { input: '<a href="javascript&#58alert(1)">XSS</a>', expected: '<a>XSS</a>' },
+      { input: '<a href="javascript&#x3a(1)">XSS</a>', expected: '<a>XSS</a>' },
+      { input: '<a href="&#106avascript:alert(1)">XSS</a>', expected: '<a>XSS</a>' },
     ];
 
     for (const { input, expected } of cases) {

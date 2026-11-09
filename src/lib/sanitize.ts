@@ -43,8 +43,12 @@ function canonicalizeHref(raw: string): { safe: boolean; canonical: string } {
     .replace(/&gt;/gi, '>')
     .replace(/&quot;/gi, '"')
     .replace(/&#x27;/gi, "'")
-    .replace(/&#(\d+);/g, (_, n) => String.fromCharCode(Number(n)))
-    .replace(/&#x([0-9a-f]+);/gi, (_, h) => String.fromCharCode(parseInt(h, 16)));
+    .replace(/&colon;/gi, ':')
+    .replace(/&tab;/gi, '\t')
+    .replace(/&newline;/gi, '\n')
+    .replace(/&cr;/gi, '\r')
+    .replace(/&#(\d+);?/g, (_, n) => String.fromCharCode(Number(n)))
+    .replace(/&#x([0-9a-f]+);?/gi, (_, h) => String.fromCharCode(parseInt(h, 16)));
 
   // 2. Strip null bytes and ASCII control characters (\x00-\x1F, \x7F)
   // eslint-disable-next-line no-control-regex
