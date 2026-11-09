@@ -63,6 +63,10 @@ describe('sanitizeHtml', () => {
       { input: '<a href="javascript&colon;alert(1)">XSS</a>', expected: '<a>XSS</a>' },
       { input: '<a href="java&Tab;script:alert(1)">XSS</a>', expected: '<a>XSS</a>' },
       { input: '<a href="java&NewLine;script:alert(1)">XSS</a>', expected: '<a>XSS</a>' },
+      // browsers decode numeric entities even without the trailing semicolon
+      { input: '<a href="javascript&#58alert(1)">XSS</a>', expected: '<a>XSS</a>' },
+      { input: '<a href="javascript&#x3a(1)">XSS</a>', expected: '<a>XSS</a>' },
+      { input: '<a href="&#106avascript:alert(1)">XSS</a>', expected: '<a>XSS</a>' },
     ];
 
     for (const { input, expected } of cases) {
