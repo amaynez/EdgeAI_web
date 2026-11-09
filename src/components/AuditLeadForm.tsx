@@ -105,7 +105,7 @@ export default function AuditLeadForm({ formCopy, onClose, onSuccess, onError }:
             <div className="audit-step">
               <div className="audit-field">
                 <label htmlFor="name">{dict.name}<span className="cta-error" aria-hidden="true"> *</span></label>
-                <input id="name" type="text" name="name" value={formData.name} onChange={handleInputChange} className="audit-input" required />
+                <input id="name" type="text" name="name" value={formData.name} onChange={handleInputChange} className="audit-input" required autoFocus />
               </div>
               <div className="audit-field">
                 <label htmlFor="email">{dict.email}<span className="cta-error" aria-hidden="true"> *</span></label>
@@ -129,7 +129,7 @@ export default function AuditLeadForm({ formCopy, onClose, onSuccess, onError }:
             <div className="audit-step">
               <div className="audit-field">
                 <label htmlFor="q1" className="audit-question">{dict.q1}</label>
-                <select id="q1" name="q1" value={formData.q1} onChange={handleInputChange} className="audit-input" required>
+                <select id="q1" name="q1" value={formData.q1} onChange={handleInputChange} className="audit-input" required autoFocus>
                   <option value="" disabled>—</option>
                   {dict.q1opts.map((opt: SelectOption) => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
                 </select>
@@ -161,7 +161,7 @@ export default function AuditLeadForm({ formCopy, onClose, onSuccess, onError }:
               </p>
               <div className="audit-field" style={{ textAlign: 'left', marginBottom: '1.5rem' }}>
                 <label htmlFor="linkedin">{dict.linkedin}</label>
-                <input id="linkedin" type="url" name="linkedin" placeholder={dict.linkedinPlaceholder} value={formData.linkedin} onChange={handleInputChange} className="audit-input" required />
+                <input id="linkedin" type="url" name="linkedin" placeholder={dict.linkedinPlaceholder} value={formData.linkedin} onChange={handleInputChange} className="audit-input" required autoFocus />
               </div>
               <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center' }}>
                 <button type="button" onClick={() => {
