@@ -15,3 +15,7 @@
 ## 2026-11-06 - [Prevent O(N) Re-renders in Lists Updated by API Polling]
 **Learning:** When a list is populated by API polling (like `fetchLeads()`), every poll returns new object references for *every* item in the list, even if the underlying data hasn't changed. Standard `React.memo` uses shallow equality, which fails when given new object references, causing an O(N) re-render of the entire list.
 **Action:** Always provide a custom equality comparison function to `React.memo` (e.g., using deep equality like `JSON.stringify(prevProps.item) === JSON.stringify(nextProps.item)`) when the list is driven by network requests or polling that mints new object references. This restores O(1) rendering performance.
+
+## 2026-11-12 - [Add Database Index for Polling State Columns]
+**Learning:** Background jobs (like `process-leads` cron) frequently poll the database using `WHERE` clauses on state columns (e.g., `processing_status = 'pending'`). Without an index, this forces the database to perform O(N) full table scans, which becomes a severe bottleneck as the leads dataset grows.
+**Action:** Always add an index to state columns (e.g., via `CREATE INDEX IF NOT EXISTS`) that are frequently queried in background processing polling to prevent database bottlenecks and O(N) scans.

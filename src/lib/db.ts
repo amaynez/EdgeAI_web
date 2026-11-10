@@ -80,6 +80,13 @@ export function ensureLeadsTable(): Promise<void> {
           console.warn('Failed to add email_sent_at column to leads table:', err);
         }
       }
+
+      // Add database index to processing_status for faster polling
+      try {
+        await pool.query(`CREATE INDEX IF NOT EXISTS idx_leads_processing_status ON leads(processing_status)`);
+      } catch (err: unknown) {
+        console.warn('Failed to add processing_status index to leads table:', err);
+      }
     } catch (error) {
       initPromise = null; // Reset cache on failure so it can be retried
       throw error;
