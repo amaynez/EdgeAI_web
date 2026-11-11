@@ -31,6 +31,10 @@ export default function Hero({ dictionary }: { dictionary: any }) {
         {/* Right analytics card */}
         <div className="hero-card">
           <div className="hero-card-glow" />
+          {/* ⚡ Bolt Optimization:
+              Replaced invalid `preload={true}` with Next.js `priority={true}`.
+              This hints the browser to preload this critical above-the-fold image,
+              improving Largest Contentful Paint (LCP) performance score. */}
           <Image
             src="/analytics-dashboard.jpg"
             alt="Margin Analysis Dashboard"
@@ -38,7 +42,7 @@ export default function Hero({ dictionary }: { dictionary: any }) {
             height={270}
             className="hero-card-img"
             style={{ display: 'block' }}
-            preload={true}
+            priority={true}
           />
           <div className="hero-card-stats">
             <div>
