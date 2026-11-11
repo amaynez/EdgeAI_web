@@ -81,11 +81,13 @@ export function ensureLeadsTable(): Promise<void> {
         }
       }
 
-      // Add database index to processing_status for faster polling
+      // ⚡ Bolt Optimization: Index for faster background cron processing
+      // The process-leads cron job frequently queries WHERE processing_status != 'completed'
+      // Creating this index prevents a full table scan, shifting the time complexity from O(N) to O(log N)
       try {
-        await pool.query(`CREATE INDEX IF NOT EXISTS idx_leads_processing_status ON leads(processing_status)`);
+        await pool.query(`CREATE INDEX IF NOT EXISTS idx_leads_processing_status ON leads (processing_status)`);
       } catch (err: unknown) {
-        console.warn('Failed to add processing_status index to leads table:', err);
+        console.warn('Failed to add idx_leads_processing_status index:', err);
       }
     } catch (error) {
       initPromise = null; // Reset cache on failure so it can be retried
