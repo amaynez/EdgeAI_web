@@ -80,6 +80,15 @@ export function ensureLeadsTable(): Promise<void> {
           console.warn('Failed to add email_sent_at column to leads table:', err);
         }
       }
+
+      // ⚡ Bolt Optimization: Index for faster background cron processing
+      // The process-leads cron job frequently queries WHERE processing_status != 'completed'
+      // Creating this index prevents a full table scan, shifting the time complexity from O(N) to O(log N)
+      try {
+        await pool.query(`CREATE INDEX IF NOT EXISTS idx_leads_processing_status ON leads (processing_status)`);
+      } catch (err: unknown) {
+        console.warn('Failed to add idx_leads_processing_status index:', err);
+      }
     } catch (error) {
       initPromise = null; // Reset cache on failure so it can be retried
       throw error;
