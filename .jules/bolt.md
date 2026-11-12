@@ -19,3 +19,7 @@
 ## 2024-11-08 - Added Index to Database for Background Jobs
 **Learning:** Background jobs that poll the database for specific states (like `processing_status != 'completed'`) will cause O(N) full table scans if the column isn't indexed, creating a significant database bottleneck as the table grows.
 **Action:** Always add an index to columns that are frequently used in `WHERE` clauses for polling/background tasks.
+
+## 2026-11-11 - Use Next.js priority prop for above-the-fold images
+**Learning:** Next.js uses the `priority={true}` prop on its Image component to mark images for preloading, specifically to improve Largest Contentful Paint (LCP) performance for above-the-fold images. Using `preload={true}` is invalid and doesn't work.
+**Action:** Use `priority={true}` for critical above-the-fold images instead of `preload`.
