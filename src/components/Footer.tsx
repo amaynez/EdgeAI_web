@@ -30,8 +30,8 @@ export default function SiteFooter({ dictionary }: { dictionary: any }) {
         <div className="footer-bottom">
           <p className="footer-copy">© {year} {f.copyright}</p>
           <div className="footer-socials">
-            <span className="footer-social-icon" title="Share">↗</span>
-            <span className="footer-social-icon" title="Email">✉</span>
+            <button type="button" className="footer-social-icon" aria-label="Share" title="Share">↗</button>
+            <a href="mailto:contact@example.com" className="footer-social-icon" aria-label="Email" title="Email">✉</a>
           </div>
         </div>
       </div>
