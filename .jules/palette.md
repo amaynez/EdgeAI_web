@@ -10,3 +10,6 @@
 ## $(date +%Y-%m-%d) - ARIA Label Syncing with Visual Text
 **Learning:** When dynamically updating the visual text of an element (like changing "Copy as Rich Text" to "Draft Unavailable" when a button is disabled), failing to update the `aria-label` creates a desync where screen readers announce outdated or confusing information compared to what sighted users see.
 **Action:** Always ensure that `aria-label` or `aria-labelledby` attributes are synchronized with conditional visual text changes so that all users receive the same contextual information.
+## 2026-11-11 - Global Focus Indicators
+**Learning:** Found that keyboard accessibility relies on focus indicators. A global `:focus-visible` approach helps keyboard users while staying invisible to mouse users.
+**Action:** Implement global `:focus-visible` on interactive elements like buttons, inputs, selects, and links to ensure accessibility without visual regression for mouse users.
